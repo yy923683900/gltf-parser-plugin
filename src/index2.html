@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Three.js GLB模型加载器</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.module.js",
+          "three/examples/jsm/loaders/DRACOLoader.js": "https://cdn.jsdelivr.net/npm/three@0.172.0/examples/jsm/loaders/DRACOLoader.js",
+          "three/examples/jsm/loaders/KTX2Loader.js": "https://cdn.jsdelivr.net/npm/three@0.172.0/examples/jsm/loaders/KTX2Loader.js",
+          "three/examples/jsm/loaders/GLTFLoader.js": "https://cdn.jsdelivr.net/npm/three@0.172.0/examples/jsm/loaders/GLTFLoader.js",
+          "three/examples/jsm/controls/OrbitControls.js": "https://cdn.jsdelivr.net/npm/three@0.172.0/examples/jsm/controls/OrbitControls.js"
+        }
+      }
+    </script>
+    <script type="module">
+      import * as THREE from "three";
+      import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+      import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+      import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+      import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
+      // @maptalks/gltf-loader 已移至 Worker 中加载
+
+      // 创建场景
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xdadada);
+
+      // 创建相机
+      const camera = new THREE.PerspectiveCamera(
+        60,
+        window.innerWidth / window.innerHeight,
+        0.01,
+        10000
+      );
+      camera.position.set(0, 0, 0);
+
+      // 创建渲染器
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.outputColorSpace = THREE.SRGBColorSpace; // 新版Three.js使用colorSpace
+      document.body.appendChild(renderer.domElement);
+
+      // 添加环境光和方向光
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+      directionalLight.position.set(1, 2, 3);
+      scene.add(directionalLight);
+
+      // 添加轨道控制器
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+
+      // 创建GLTFLoader实例（移到外部，避免重复创建）
+      const loader = new GLTFLoader();
+
+      // 设置DRACOLoader
+      const dracoLoader = new DRACOLoader();
+      // 使用CDN上的Draco解码器
+      dracoLoader.setDecoderPath(
+        "https://cdn.jsdelivr.net/npm/three@0.172.0/examples/jsm/libs/draco/"
+      );
+      // 将DRACOLoader附加到GLTFLoader
+      loader.setDRACOLoader(dracoLoader);
+
+      // 设置KTX2Loader（如果模型使用了KTX2纹理）
+      const ktx2Loader = new KTX2Loader();
+      ktx2Loader.setTranscoderPath(
+        "https://cdn.jsdelivr.net/npm/three@0.172.0/examples/jsm/libs/basis/"
+      );
+      ktx2Loader.detectSupport(renderer);
+      loader.setKTX2Loader(ktx2Loader);
+
+      // 存储当前加载的模型，方便替换
+      let currentModel = null;
+
+      /**
+       * 将 @maptalks/gltf-loader 返回的数据转换成 Three.js Scene
+       * @param {Object} data - maptalks/gltf-loader 加载返回的GLTF数据
+       * @returns {THREE.Scene} Three.js场景对象
+       */
+      function buildSceneFromGLTFData(data) {
+        const scene = new THREE.Scene();
+
+        // 解析纹理 (textures是数组或null)
+        const textureMap = new Map();
+        if (data.textures) {
+          for (const [index, textureData] of data.textures.entries()) {
+            // maptalks/gltf-loader 格式：图片数据直接在 textureData.image 中
+            if (textureData.image && textureData.image.array) {
+              const imageData = textureData.image;
+              const width = imageData.width;
+              const height = imageData.height;
+              const array = imageData.array;
+
+              // 使用 DataTexture 处理原始像素数据 (RGBA)
+              const tex = new THREE.DataTexture(
+                array,
+                width,
+                height,
+                THREE.RGBAFormat,
+                THREE.UnsignedByteType
+              );
+              tex.flipY = false;
+              tex.colorSpace = THREE.SRGBColorSpace;
+              tex.needsUpdate = true;
+              textureMap.set(index, tex);
+              continue;
+            }
+
+            // 默认空纹理
+            const texture = new THREE.Texture();
+            texture.flipY = false;
+            textureMap.set(index, texture);
+          }
+        }
+
+        // 解析材质
+        const materialMap = new Map();
+        if (data.materials) {
+          for (const [index, matData] of data.materials.entries()) {
+            // TODO 留材质由用户决定的入口
+            const material = new THREE.MeshStandardMaterial();
+
+            // PBR材质属性
+            if (matData.pbrMetallicRoughness) {
+              const pbr = matData.pbrMetallicRoughness;
+
+              // 基础颜色
+              if (pbr.baseColorFactor) {
+                material.color.setRGB(
+                  pbr.baseColorFactor[0],
+                  pbr.baseColorFactor[1],
+                  pbr.baseColorFactor[2]
+                );
+                if (pbr.baseColorFactor[3] !== undefined) {
+                  material.opacity = pbr.baseColorFactor[3];
+                  if (material.opacity < 1) material.transparent = true;
+                }
+              }
+
+              // 基础颜色纹理
+              if (
+                pbr.baseColorTexture &&
+                pbr.baseColorTexture.index !== undefined
+              ) {
+                const tex = textureMap.get(pbr.baseColorTexture.index);
+
+                if (tex) {
+                  material.map = tex;
+                }
+              }
+
+              // 金属度和粗糙度
+              material.metalness =
+                pbr.metallicFactor !== undefined ? pbr.metallicFactor : 1.0;
+              material.roughness =
+                pbr.roughnessFactor !== undefined ? pbr.roughnessFactor : 1.0;
+
+              // 金属粗糙度纹理
+              if (
+                pbr.metallicRoughnessTexture &&
+                pbr.metallicRoughnessTexture.index !== undefined
+              ) {
+                const tex = textureMap.get(pbr.metallicRoughnessTexture.index);
+                if (tex) {
+                  material.metalnessMap = material.roughnessMap = tex;
+                }
+              }
+            }
+
+            // 法线贴图
+            if (
+              matData.normalTexture &&
+              matData.normalTexture.index !== undefined
+            ) {
+              const tex = textureMap.get(matData.normalTexture.index);
+              if (tex) {
+                material.normalMap = tex;
+                if (matData.normalTexture.scale !== undefined) {
+                  material.normalScale.set(
+                    matData.normalTexture.scale,
+                    matData.normalTexture.scale
+                  );
+                }
+              }
+            }
+
+            // 遮蔽贴图
+            if (
+              matData.occlusionTexture &&
+              matData.occlusionTexture.index !== undefined
+            ) {
+              const tex = textureMap.get(matData.occlusionTexture.index);
+              if (tex) {
+                material.aoMap = tex;
+              }
+            }
+
+            // 自发光
+            if (
+              matData.emissiveTexture &&
+              matData.emissiveTexture.index !== undefined
+            ) {
+              const tex = textureMap.get(matData.emissiveTexture.index);
+              if (tex) {
+                material.emissiveMap = tex;
+              }
+            }
+            if (matData.emissiveFactor) {
+              material.emissive.setRGB(
+                matData.emissiveFactor[0],
+                matData.emissiveFactor[1],
+                matData.emissiveFactor[2]
+              );
+            }
+
+            // 双面渲染
+            material.side = matData.doubleSided
+              ? THREE.DoubleSide
+              : THREE.FrontSide;
+
+            // Alpha模式
+            if (matData.alphaMode === "BLEND") {
+              material.transparent = true;
+            } else if (matData.alphaMode === "MASK") {
+              material.alphaTest =
+                matData.alphaCutoff !== undefined ? matData.alphaCutoff : 0.5;
+            }
+
+            materialMap.set(Number(index), material);
+          }
+        }
+
+        // 创建默认材质
+        const defaultMaterial = new THREE.MeshStandardMaterial({
+          color: 0xcccccc,
+        });
+
+        // 解析网格（只存储 geometry 和 material，不创建 Mesh）
+        // 注意：顶点属性的反量化和解码已在 Worker 中完成
+        const meshMap = new Map();
+        if (data.meshes) {
+          for (const meshIndex in data.meshes) {
+            const meshData = data.meshes[meshIndex];
+            const primitiveDataList = [];
+            const primitives = meshData.primitives;
+
+            for (const primitive of primitives) {
+              const geometry = new THREE.BufferGeometry();
+
+              // 处理顶点属性（Worker 已完成反量化/解码，直接使用）
+              if (primitive.attributes) {
+                // 位置
+                const posData = primitive.attributes.POSITION;
+                if (posData && posData.array) {
+                  geometry.setAttribute(
+                    "position",
+                    new THREE.BufferAttribute(
+                      posData.array,
+                      posData.itemSize || 3
+                    )
+                  );
+                }
+
+                // 法线
+                const normalData = primitive.attributes.NORMAL;
+                if (normalData && normalData.array) {
+                  geometry.setAttribute(
+                    "normal",
+                    new THREE.BufferAttribute(
+                      normalData.array,
+                      normalData.itemSize || 3
+                    )
+                  );
+                }
+
+                // UV坐标
+                const uvData = primitive.attributes.TEXCOORD_0;
+                if (uvData && uvData.array) {
+                  geometry.setAttribute(
+                    "uv",
+                    new THREE.BufferAttribute(
+                      uvData.array,
+                      uvData.itemSize || 2
+                    )
+                  );
+                }
+
+                // 顶点颜色
+                const colorData = primitive.attributes.COLOR_0;
+                if (colorData && colorData.array) {
+                  geometry.setAttribute(
+                    "color",
+                    new THREE.BufferAttribute(
+                      colorData.array,
+                      colorData.itemSize || 3
+                    )
+                  );
+                }
+
+                // 切线
+                const tangentData = primitive.attributes.TANGENT;
+                if (tangentData && tangentData.array) {
+                  geometry.setAttribute(
+                    "tangent",
+                    new THREE.BufferAttribute(
+                      tangentData.array,
+                      tangentData.itemSize || 4
+                    )
+                  );
+                }
+              }
+
+              // 索引
+              const indexData = primitive.indices;
+              if (indexData && indexData.array) {
+                geometry.setIndex(
+                  new THREE.BufferAttribute(indexData.array, 1)
+                );
+              }
+
+              geometry.computeVertexNormals();
+
+              // 获取材质
+              const material =
+                primitive.material !== undefined
+                  ? materialMap.get(primitive.material) || defaultMaterial
+                  : defaultMaterial;
+
+              // 存储 geometry 和 material，延迟创建 Mesh
+              primitiveDataList.push({ geometry, material });
+            }
+
+            meshMap.set(Number(meshIndex), primitiveDataList);
+          }
+        }
+
+        // 解析节点并构建场景图
+
+        // 解析单个节点数据（接受节点对象）
+        function parseNodeData(nodeData) {
+          const node = new THREE.Group();
+
+          const primitiveDataList = meshMap.get(nodeData.mesh);
+          for (const { geometry, material } of primitiveDataList) {
+            const mesh = new THREE.Mesh(geometry, material);
+            node.add(mesh);
+          }
+
+          // 设置节点名称
+          if (nodeData.name) {
+            node.name = nodeData.name;
+          }
+
+          // 应用变换
+          if (nodeData.matrix) {
+            const m = new THREE.Matrix4();
+            m.fromArray(nodeData.matrix);
+            node.applyMatrix4(m);
+          } else {
+            if (nodeData.translation) {
+              node.position.set(
+                nodeData.translation[0],
+                nodeData.translation[1],
+                nodeData.translation[2]
+              );
+            }
+            if (nodeData.rotation) {
+              node.quaternion.set(
+                nodeData.rotation[0],
+                nodeData.rotation[1],
+                nodeData.rotation[2],
+                nodeData.rotation[3]
+              );
+            }
+            if (nodeData.scale) {
+              node.scale.set(
+                nodeData.scale[0],
+                nodeData.scale[1],
+                nodeData.scale[2]
+              );
+            }
+          }
+
+          // 递归处理子节点（children可能是对象数组或索引数组）
+          if (nodeData.children && Array.isArray(nodeData.children)) {
+            for (const child of nodeData.children) {
+              const childNode = parseNodeData(child);
+              node.add(childNode);
+            }
+          }
+
+          return node;
+        }
+
+        // 添加场景节点
+
+        const sceneData = data.scenes[0];
+
+        for (const nodeData of sceneData.nodes) {
+          const node = parseNodeData(nodeData);
+          scene.add(node);
+        }
+
+        return scene;
+      }
+
+      // 从URL的hash部分获取模型URL并加载
+      function loadGltfModel() {
+        // 使用Worker加载模型并添加到主场景
+        loadGLTFModelWithMaptalks()
+          .then((gltfScene) => {
+            // 添加到主场景
+            scene.add(gltfScene);
+
+            // 计算模型大小并调整相机
+            const box = new THREE.Box3().setFromObject(gltfScene);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+
+            // 将模型移动到世界坐标原点
+            gltfScene.position.x = -center.x;
+            gltfScene.position.y = -center.y;
+            gltfScene.position.z = -center.z;
+
+            // 设置相机位置
+            const distance = maxDim * 2;
+            camera.position.set(distance, distance * 0.5, distance);
+            camera.lookAt(0, 0, 0);
+
+            // 调整控制器
+            controls.maxDistance = maxDim * 10;
+            controls.minDistance = maxDim * 0.1;
+            controls.target.set(0, 0, 0);
+            controls.update();
+
+            console.log("Worker加载的模型已添加到主场景", gltfScene);
+          })
+          .catch((error) => {
+            console.error("Worker加载模型失败:", error);
+          });
+      }
+
+      function loadGLTFModelWithMaptalks() {
+        const modelUrl = "./Avocado.gltf";
+
+        return new Promise((resolve, reject) => {
+          // 创建 Worker
+          const worker = new Worker("./gltf-worker.js", { type: "module" });
+
+          // 生成唯一回调 ID
+          const callbackId = Date.now() + "_" + Math.random();
+
+          worker.onmessage = function (event) {
+            const { type, data, error, percent, callback } = event.data;
+
+            switch (type) {
+              case "ready":
+                worker.postMessage({
+                  type: "load",
+                  url: modelUrl,
+                  callback: callbackId,
+                });
+                break;
+
+              case "success":
+                // 使用data构建Three.js场景
+                console.log("data", data);
+                const gltfScene = buildSceneFromGLTFData(data);
+                console.log("构建的Three.js场景:", gltfScene);
+                worker.terminate();
+                resolve(gltfScene);
+                break;
+
+              case "error":
+                console.error("GLTF模型加载失败 (Worker):", error);
+                worker.terminate();
+                reject(new Error(error));
+                break;
+            }
+          };
+
+          worker.onerror = function (error) {
+            console.error("Worker 错误:", error);
+            worker.terminate();
+            reject(error);
+          };
+        });
+      }
+
+      // 监听hash变化事件
+      window.addEventListener("hashchange", loadGltfModel);
+
+      // 初始加载
+      loadGltfModel();
+
+      // 自适应窗口大小
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // 动画循环
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+    </script>
+  </body>
+</html>
+
+// TODO //
+worker全局加载,只加载一次,销毁在插件的dispose，需要考虑创建多个plugin的情况

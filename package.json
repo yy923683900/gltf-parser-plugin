@@ -1,0 +1,46 @@
+{
+  "name": "gltf-parser-plugin",
+  "version": "1.0.0",
+  "description": "A plugin for parsing GLTF files",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite build --watch",
+    "serve": "vite",
+    "build": "tsc && vite build",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "prepublishOnly": "pnpm run build"
+  },
+  "author": "maptalks",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "@types/three": "^0.182.0",
+    "@typescript-eslint/eslint-plugin": "^8.52.0",
+    "@typescript-eslint/parser": "^8.52.0",
+    "eslint": "^9.39.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^4.0.16"
+  },
+  "dependencies": {
+    "3d-tiles-renderer": "^0.4.19",
+    "three": "^0.182.0"
+  }
+}
