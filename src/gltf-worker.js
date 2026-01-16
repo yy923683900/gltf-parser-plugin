@@ -258,6 +258,25 @@ Promise.all([
                 };
                 transferables.push(processed.buffer);
               }
+
+              // 处理 Feature ID 属性 (用于 EXT_mesh_features)
+              for (const attrName in primitive.attributes) {
+                if (attrName.startsWith("_FEATURE_ID_")) {
+                  const featureIdData = primitive.attributes[attrName];
+                  if (featureIdData && featureIdData.array) {
+                    const processed = featureIdData.quantization
+                      ? dequantizeAttribute(featureIdData, 1)
+                      : featureIdData.array;
+                    primitive.attributes[attrName] = {
+                      array: processed,
+                      itemSize: 1,
+                    };
+                    if (processed.buffer && !transferables.includes(processed.buffer)) {
+                      transferables.push(processed.buffer);
+                    }
+                  }
+                }
+              }
             }
 
             // 处理索引 - 确保是 TypedArray
@@ -269,6 +288,9 @@ Promise.all([
                 transferables.push(indexData.array.buffer);
               }
             }
+
+            // 保留 primitive 的 extensions 用于 metadata 处理
+            // extensions 数据已经在 primitive 中，无需特殊处理
           }
         }
       }
@@ -282,6 +304,15 @@ Promise.all([
             textureData.image.array.buffer
           ) {
             transferables.push(textureData.image.array.buffer);
+          }
+        }
+      }
+
+      // 处理 structuralMetadata 的 buffers
+      if (data.structuralMetadata && data.structuralMetadata.buffers) {
+        for (const buf of data.structuralMetadata.buffers) {
+          if (buf && !transferables.includes(buf)) {
+            transferables.push(buf);
           }
         }
       }

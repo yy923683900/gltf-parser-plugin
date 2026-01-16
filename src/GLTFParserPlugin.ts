@@ -19,7 +19,21 @@ import {
   GLTFLoader,
   type GLTF,
 } from "three/examples/jsm/loaders/GLTFLoader.js";
-import type { GLTFNodeData, GLTFWorkerData } from "./types";
+import type {
+  GLTFNodeData,
+  GLTFWorkerData,
+  PrimitiveExtensions,
+} from "./types";
+
+// Metadata classes from renderer-plugin
+// @ts-expect-error - No type declarations for these JS modules
+import { StructuralMetadata } from "3d-tiles-renderer/src/three/plugins/gltf/metadata/classes/StructuralMetadata.js";
+// @ts-expect-error - No type declarations for these JS modules
+import { MeshFeatures } from "3d-tiles-renderer/src/three/plugins/gltf/metadata/classes/MeshFeatures.js";
+
+// Extension names
+const EXT_STRUCTURAL_METADATA = "EXT_structural_metadata";
+const EXT_MESH_FEATURES = "EXT_mesh_features";
 
 // Worker URL
 const WORKER_URL = new URL("./gltf-worker.js", import.meta.url).href;
@@ -69,12 +83,31 @@ function releaseSharedWorker(): void {
 }
 
 /**
+ * GLTFWorkerLoader 配置选项
+ */
+interface GLTFWorkerLoaderOptions {
+  /** 是否启用 metadata 支持 (EXT_mesh_features, EXT_structural_metadata) */
+  metadata?: boolean;
+}
+
+/**
+ * Mesh associations - 映射 Three.js Mesh 到原始的 mesh/primitive 索引
+ */
+interface MeshAssociation {
+  meshes: number;
+  primitives: number;
+}
+
+/**
  * 使用 Worker 解析 GLTF 的自定义 Loader
  */
 class GLTFWorkerLoader extends GLTFLoader {
-  constructor(manager?: LoadingManager) {
+  private _metadata: boolean = true;
+
+  constructor(manager?: LoadingManager, options?: GLTFWorkerLoaderOptions) {
     console.log("GLTFWorkerLoader constructor");
     super(manager);
+    this._metadata = options?.metadata ?? true;
   }
 
   /**
@@ -82,7 +115,6 @@ class GLTFWorkerLoader extends GLTFLoader {
    */
   async parseAsync(buffer: ArrayBuffer, path: string): Promise<GLTF> {
     await workerReadyPromise;
-    console.log(99999);
 
     if (!sharedWorker) {
       throw new Error("GLTFWorkerLoader: Worker not initialized");
@@ -159,8 +191,12 @@ class GLTFWorkerLoader extends GLTFLoader {
   private buildSceneFromGLTFData(data: GLTFWorkerData): Scene {
     const scene = new Scene();
 
+    // Mesh associations - 映射 Three.js Mesh 到原始的 mesh/primitive 索引
+    const associations = new Map<Mesh, MeshAssociation>();
+
     // 解析纹理
     const textureMap = new Map<number, Texture>();
+    const textureArray: (Texture | null)[] = [];
     if (data.textures) {
       for (const [index, textureData] of data.textures.entries()) {
         if (textureData.image && textureData.image.array) {
@@ -176,6 +212,7 @@ class GLTFWorkerLoader extends GLTFLoader {
           tex.colorSpace = SRGBColorSpace;
           tex.needsUpdate = true;
           textureMap.set(index, tex);
+          textureArray[index] = tex;
           continue;
         }
 
@@ -183,6 +220,7 @@ class GLTFWorkerLoader extends GLTFLoader {
         const texture = new Texture();
         texture.flipY = false;
         textureMap.set(index, texture);
+        textureArray[index] = texture;
       }
     }
 
@@ -304,10 +342,15 @@ class GLTFWorkerLoader extends GLTFLoader {
       color: 0xcccccc,
     });
 
-    // 解析网格
+    // 解析网格，同时记录 primitive extensions
     const meshMap = new Map<
       number,
-      Array<{ geometry: BufferGeometry; material: MeshStandardMaterial }>
+      Array<{
+        geometry: BufferGeometry;
+        material: MeshStandardMaterial;
+        primitiveIndex: number;
+        extensions?: PrimitiveExtensions;
+      }>
     >();
     if (data.meshes) {
       for (const meshIndex in data.meshes) {
@@ -315,10 +358,17 @@ class GLTFWorkerLoader extends GLTFLoader {
         const primitiveDataList: Array<{
           geometry: BufferGeometry;
           material: MeshStandardMaterial;
+          primitiveIndex: number;
+          extensions?: PrimitiveExtensions;
         }> = [];
         const primitives = meshData.primitives;
 
-        for (const primitive of primitives) {
+        for (
+          let primitiveIndex = 0;
+          primitiveIndex < primitives.length;
+          primitiveIndex++
+        ) {
+          const primitive = primitives[primitiveIndex];
           const geometry = new BufferGeometry();
 
           // 处理顶点属性
@@ -370,6 +420,25 @@ class GLTFWorkerLoader extends GLTFLoader {
                 )
               );
             }
+
+            // Feature ID 属性 (用于 EXT_mesh_features)
+            for (const attrName in primitive.attributes) {
+              if (attrName.startsWith("_FEATURE_ID_")) {
+                const featureIdData = primitive.attributes[attrName];
+                if (featureIdData && featureIdData.array) {
+                  const normalizedName = attrName
+                    .toLowerCase()
+                    .replace("_feature_id_", "_feature_id_");
+                  geometry.setAttribute(
+                    normalizedName,
+                    new BufferAttribute(
+                      featureIdData.array,
+                      featureIdData.itemSize || 1
+                    )
+                  );
+                }
+              }
+            }
           }
 
           // 索引
@@ -378,16 +447,18 @@ class GLTFWorkerLoader extends GLTFLoader {
             geometry.setIndex(new BufferAttribute(indexData.array, 1));
           }
 
-          // 法线已在 Worker 中计算，无需在主线程重复计算
-          // geometry.computeVertexNormals();
-
           // 获取材质
           const material =
             primitive.material !== undefined
               ? materialMap.get(primitive.material) || defaultMaterial
               : defaultMaterial;
 
-          primitiveDataList.push({ geometry, material });
+          primitiveDataList.push({
+            geometry,
+            material,
+            primitiveIndex,
+            extensions: primitive.extensions,
+          });
         }
 
         meshMap.set(Number(meshIndex), primitiveDataList);
@@ -400,9 +471,19 @@ class GLTFWorkerLoader extends GLTFLoader {
 
       const primitiveDataList = meshMap.get(nodeData.mesh);
       if (primitiveDataList) {
-        for (const { geometry, material } of primitiveDataList) {
+        for (const {
+          geometry,
+          material,
+          primitiveIndex,
+        } of primitiveDataList) {
           const mesh = new Mesh(geometry, material);
           node.add(mesh);
+
+          // 记录 mesh associations
+          associations.set(mesh, {
+            meshes: nodeData.mesh,
+            primitives: primitiveIndex,
+          });
         }
       }
 
@@ -459,24 +540,159 @@ class GLTFWorkerLoader extends GLTFLoader {
       scene.add(node);
     }
 
+    // 处理 metadata (如果启用)
+    if (this._metadata) {
+      this.processMetadata(scene, data, associations, textureArray, meshMap);
+    }
+
     return scene;
+  }
+
+  /**
+   * 处理并挂载 metadata 到场景和 mesh 对象
+   */
+  private processMetadata(
+    scene: Scene,
+    data: GLTFWorkerData,
+    associations: Map<Mesh, MeshAssociation>,
+    textures: (Texture | null)[],
+    meshMap: Map<
+      number,
+      Array<{
+        geometry: BufferGeometry;
+        material: MeshStandardMaterial;
+        primitiveIndex: number;
+        extensions?: PrimitiveExtensions;
+      }>
+    >
+  ): void {
+    const extensionsUsed = data.json?.extensionsUsed || [];
+    const hasStructuralMetadata = extensionsUsed.includes(
+      EXT_STRUCTURAL_METADATA
+    );
+    const hasMeshFeatures = extensionsUsed.includes(EXT_MESH_FEATURES);
+
+    if (!hasStructuralMetadata && !hasMeshFeatures) {
+      return;
+    }
+
+    // 处理 EXT_structural_metadata
+    let rootMetadata: StructuralMetadata | null = null;
+    if (hasStructuralMetadata && data.structuralMetadata) {
+      const rootExtension = data.json?.extensions?.[EXT_STRUCTURAL_METADATA];
+      if (rootExtension) {
+        // 构建 StructuralMetadata 需要的 definition 对象
+        const definition = {
+          schema: data.structuralMetadata.schema,
+          propertyTables: data.structuralMetadata.propertyTables || [],
+          propertyTextures: rootExtension.propertyTextures || [],
+          propertyAttributes: rootExtension.propertyAttributes || [],
+        };
+
+        // buffers 数组用于 PropertyTableAccessor
+        const buffers = data.structuralMetadata.buffers || [];
+
+        // 创建根级 StructuralMetadata 实例
+        rootMetadata = new StructuralMetadata(definition, textures, buffers);
+        scene.userData.structuralMetadata = rootMetadata;
+      }
+    }
+
+    // 遍历场景中的所有 mesh，处理 mesh-level metadata
+    scene.traverse((child) => {
+      if (!(child instanceof Mesh)) return;
+
+      const association = associations.get(child);
+      if (!association) return;
+
+      const { meshes: meshIndex, primitives: primitiveIndex } = association;
+
+      // 获取原始 primitive 数据
+      const primitiveDataList = meshMap.get(meshIndex);
+      if (!primitiveDataList) return;
+
+      const primitiveData = primitiveDataList.find(
+        (p) => p.primitiveIndex === primitiveIndex
+      );
+      if (!primitiveData) return;
+
+      const extensions = primitiveData.extensions;
+
+      // 处理 EXT_structural_metadata (primitive level)
+      if (hasStructuralMetadata && rootMetadata) {
+        const primMetadataExt = extensions?.[EXT_STRUCTURAL_METADATA];
+        if (primMetadataExt) {
+          // primitive 有自己的 metadata 引用
+          const rootExtension =
+            data.json?.extensions?.[EXT_STRUCTURAL_METADATA];
+          if (rootExtension) {
+            const definition = {
+              schema: data.structuralMetadata!.schema,
+              propertyTables: data.structuralMetadata!.propertyTables || [],
+              propertyTextures: rootExtension.propertyTextures || [],
+              propertyAttributes: rootExtension.propertyAttributes || [],
+            };
+            const buffers = data.structuralMetadata!.buffers || [];
+
+            child.userData.structuralMetadata = new StructuralMetadata(
+              definition,
+              textures,
+              buffers,
+              primMetadataExt,
+              child
+            );
+          }
+        } else {
+          // 使用根级 metadata
+          child.userData.structuralMetadata = rootMetadata;
+        }
+      }
+
+      // 处理 EXT_mesh_features
+      if (hasMeshFeatures) {
+        const meshFeaturesExt = extensions?.[EXT_MESH_FEATURES];
+        if (meshFeaturesExt) {
+          child.userData.meshFeatures = new MeshFeatures(
+            child.geometry,
+            textures,
+            meshFeaturesExt
+          );
+        }
+      }
+    });
   }
 }
 
 /**
- * GLTF Worker 解析插件
- * 通过 tiles.manager.addHandler 注册自定义 GLTF Loader
- *
- * 注意：此插件必须在 GLTFExtensionsPlugin 之前注册，否则会被覆盖
+ * GLTFParserPlugin 配置选项
  */
+export interface GLTFParserPluginOptions {
+  /**
+   * 是否启用 metadata 支持
+   * 包括 EXT_mesh_features 和 EXT_structural_metadata 扩展
+   * @default true
+   */
+  metadata?: boolean;
+}
+
 export class GLTFParserPlugin {
   name = "GLTFParserPlugin";
 
   private tiles: any = null;
   private _loader: GLTFWorkerLoader | null = null;
   private readonly _gltfRegex = /\.(gltf|glb)$/g;
+  private readonly _options: GLTFParserPluginOptions;
 
-  constructor() {
+  /**
+   * 创建 GLTFParserPlugin 实例
+   * @param options 配置选项
+   */
+  constructor(options?: GLTFParserPluginOptions) {
+    this._options = {
+      metadata: true,
+      ...options,
+    };
+
     // 初始化共享 worker
     initSharedWorker();
   }
@@ -487,8 +703,10 @@ export class GLTFParserPlugin {
   init(tiles: any) {
     this.tiles = tiles;
 
-    // 创建自定义 loader 并注册
-    this._loader = new GLTFWorkerLoader(tiles.manager);
+    // 创建自定义 loader 并注册，传入 metadata 选项
+    this._loader = new GLTFWorkerLoader(tiles.manager, {
+      metadata: this._options.metadata,
+    });
 
     // 使用正则表达式匹配 .gltf 和 .glb 文件
     tiles.manager.addHandler(this._gltfRegex, this._loader);
@@ -512,3 +730,42 @@ export class GLTFParserPlugin {
     releaseSharedWorker();
   }
 }
+
+/**
+ * GLTF Worker 解析插件
+ * 通过 tiles.manager.addHandler 注册自定义 GLTF Loader
+ *
+ * 支持的特性:
+ * - 在 Worker 中解析 GLTF/GLB 文件
+ * - 支持 Draco 压缩
+ * - 支持 EXT_mesh_features 扩展 (metadata)
+ * - 支持 EXT_structural_metadata 扩展 (metadata)
+ *
+ * 注意：此插件必须在 GLTFExtensionsPlugin 之前注册，否则会被覆盖
+ *
+ * @example
+ * ```typescript
+ * import { GLTFParserPlugin } from './GLTFParserPlugin';
+ *
+ * // 基本用法
+ * const plugin = new GLTFParserPlugin();
+ *
+ * // 禁用 metadata 支持
+ * const plugin = new GLTFParserPlugin({ metadata: false });
+ *
+ * // 添加到 TilesRenderer
+ * tilesRenderer.registerPlugin(plugin);
+ *
+ * // 访问 metadata
+ * scene.traverse((child) => {
+ *   if (child.userData.structuralMetadata) {
+ *     // 获取属性表数据
+ *     const data = child.userData.structuralMetadata.getPropertyTableData(0, featureId);
+ *   }
+ *   if (child.userData.meshFeatures) {
+ *     // 获取 feature ID
+ *     const features = child.userData.meshFeatures.getFeatures(triangleIndex, barycoord);
+ *   }
+ * });
+ * ```
+ */
