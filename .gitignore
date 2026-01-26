@@ -5,6 +5,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Debug
+debug/
+
 # Build outputs
 dist/
 

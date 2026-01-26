@@ -25,6 +25,8 @@ import type {
   PrimitiveExtensions,
 } from "./types";
 
+import {  } from "3d-tiles-renderer";
+
 // Metadata classes from renderer-plugin
 // @ts-expect-error - No type declarations for these JS modules
 import { StructuralMetadata } from "3d-tiles-renderer/src/three/plugins/gltf/metadata/classes/StructuralMetadata.js";
@@ -105,7 +107,6 @@ class GLTFWorkerLoader extends GLTFLoader {
   private _metadata: boolean = true;
 
   constructor(manager?: LoadingManager, options?: GLTFWorkerLoaderOptions) {
-    console.log("GLTFWorkerLoader constructor");
     super(manager);
     this._metadata = options?.metadata ?? true;
   }
@@ -342,7 +343,7 @@ class GLTFWorkerLoader extends GLTFLoader {
       color: 0xcccccc,
     });
 
-    // 解析网格，同时记录 primitive extensions
+    // 解析mesh，同时记录 primitive extensions
     const meshMap = new Map<
       number,
       Array<{
@@ -688,6 +689,7 @@ export class GLTFParserPlugin {
    * @param options 配置选项
    */
   constructor(options?: GLTFParserPluginOptions) {
+    console.log("GLTFParserPlugin constructor");
     this._options = {
       metadata: true,
       ...options,
@@ -710,8 +712,6 @@ export class GLTFParserPlugin {
 
     // 使用正则表达式匹配 .gltf 和 .glb 文件
     tiles.manager.addHandler(this._gltfRegex, this._loader);
-
-    console.log("GLTFParserPlugin: registered handler for", this._gltfRegex);
   }
 
   /**

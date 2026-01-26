@@ -1,11 +1,12 @@
 // 同时加载 gltf-loader、draco 解码器和 Three.js
 Promise.all([
-  import("https://esm.sh/@maptalks/gltf-loader"),
+  // import("https://esm.sh/@maptalks/gltf-loader"),
+  import("http:127.0.0.1:9100/dist/gltf-loader.es.js"),
   import("https://esm.sh/@maptalks/transcoders.draco"),
   import("https://esm.sh/three"),
 ])
   .then(([gltfModule, dracoModule, THREE]) => {
-    const { GLTFLoader, Ajax } = gltfModule;
+    const { GLTFLoader } = gltfModule;
     const { BufferGeometry, BufferAttribute } = THREE;
 
     // debugger
@@ -14,51 +15,6 @@ Promise.all([
       const loader = new GLTFLoader(root, data, options);
       return loader.load({
         skipAttributeTransform: true,
-      });
-    }
-
-    function getArrayBuffer(url, options) {
-      return Ajax.getArrayBuffer(url, options);
-    }
-
-    function loadGLTF(url, fetchOptions = {}) {
-      const index = url.lastIndexOf("/");
-      const root = url.slice(0, index);
-
-      return getArrayBuffer(url, fetchOptions).then((res) => {
-        if (res.message) {
-          return res;
-        }
-        const data = res.data;
-        const dataView = new DataView(data, 0, data.byteLength);
-        const version = dataView.getUint32(4, true);
-
-        if (version > 2) {
-          return Ajax.getJSON(url, fetchOptions).then((jsonRes) => {
-            if (jsonRes.message) {
-              return jsonRes;
-            }
-            return load(root, jsonRes, {
-              transferable: true,
-              fetchOptions,
-              decoders: {
-                draco: dracoModule.default(),
-              },
-            });
-          });
-        } else {
-          return load(
-            root,
-            { buffer: data, byteOffset: 0 },
-            {
-              transferable: true,
-              fetchOptions,
-              decoders: {
-                draco: dracoModule.default(),
-              },
-            }
-          );
-        }
       });
     }
 
@@ -218,9 +174,17 @@ Promise.all([
               } else if (primitive.attributes.POSITION) {
                 // 如果没有法线数据，计算顶点法线
                 const posArray = primitive.attributes.POSITION.array;
-                const indexArray = primitive.indices ? primitive.indices.array : null;
-                const computedNormals = computeVertexNormals(posArray, indexArray);
-                primitive.attributes.NORMAL = { array: computedNormals, itemSize: 3 };
+                const indexArray = primitive.indices
+                  ? primitive.indices.array
+                  : null;
+                const computedNormals = computeVertexNormals(
+                  posArray,
+                  indexArray
+                );
+                primitive.attributes.NORMAL = {
+                  array: computedNormals,
+                  itemSize: 3,
+                };
                 transferables.push(computedNormals.buffer);
               }
 
@@ -271,7 +235,10 @@ Promise.all([
                       array: processed,
                       itemSize: 1,
                     };
-                    if (processed.buffer && !transferables.includes(processed.buffer)) {
+                    if (
+                      processed.buffer &&
+                      !transferables.includes(processed.buffer)
+                    ) {
                       transferables.push(processed.buffer);
                     }
                   }
