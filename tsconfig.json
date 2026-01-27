@@ -27,4 +27,4 @@
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "web-ifc-example-1.0"]
-} 
+}

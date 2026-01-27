@@ -145,7 +145,7 @@ class GLTFWorkerLoader extends GLTFLoader {
    */
   private parseWithWorker(
     buffer: ArrayBuffer,
-    workingPath: string
+    workingPath: string,
   ): Promise<GLTFWorkerData> {
     return new Promise((resolve, reject) => {
       if (!sharedWorker) {
@@ -179,7 +179,7 @@ class GLTFWorkerLoader extends GLTFLoader {
           root: workingPath,
           callback: callbackId,
         },
-        [buffer]
+        [buffer],
       );
     });
   }
@@ -205,7 +205,7 @@ class GLTFWorkerLoader extends GLTFLoader {
             imageData.width,
             imageData.height,
             RGBAFormat,
-            UnsignedByteType
+            UnsignedByteType,
           );
           tex.flipY = false;
           tex.colorSpace = SRGBColorSpace;
@@ -238,7 +238,7 @@ class GLTFWorkerLoader extends GLTFLoader {
             material.color.setRGB(
               pbr.baseColorFactor[0],
               pbr.baseColorFactor[1],
-              pbr.baseColorFactor[2]
+              pbr.baseColorFactor[2],
             );
             if (pbr.baseColorFactor[3] !== undefined) {
               material.opacity = pbr.baseColorFactor[3];
@@ -286,7 +286,7 @@ class GLTFWorkerLoader extends GLTFLoader {
             if (matData.normalTexture.scale !== undefined) {
               material.normalScale.set(
                 matData.normalTexture.scale,
-                matData.normalTexture.scale
+                matData.normalTexture.scale,
               );
             }
           }
@@ -317,7 +317,7 @@ class GLTFWorkerLoader extends GLTFLoader {
           material.emissive.setRGB(
             matData.emissiveFactor[0],
             matData.emissiveFactor[1],
-            matData.emissiveFactor[2]
+            matData.emissiveFactor[2],
           );
         }
 
@@ -377,7 +377,7 @@ class GLTFWorkerLoader extends GLTFLoader {
             if (posData && posData.array) {
               geometry.setAttribute(
                 "position",
-                new BufferAttribute(posData.array, posData.itemSize || 3)
+                new BufferAttribute(posData.array, posData.itemSize || 3),
               );
             }
 
@@ -386,7 +386,7 @@ class GLTFWorkerLoader extends GLTFLoader {
             if (normalData && normalData.array) {
               geometry.setAttribute(
                 "normal",
-                new BufferAttribute(normalData.array, normalData.itemSize || 3)
+                new BufferAttribute(normalData.array, normalData.itemSize || 3),
               );
             }
 
@@ -395,7 +395,7 @@ class GLTFWorkerLoader extends GLTFLoader {
             if (uvData && uvData.array) {
               geometry.setAttribute(
                 "uv",
-                new BufferAttribute(uvData.array, uvData.itemSize || 2)
+                new BufferAttribute(uvData.array, uvData.itemSize || 2),
               );
             }
 
@@ -404,7 +404,7 @@ class GLTFWorkerLoader extends GLTFLoader {
             if (colorData && colorData.array) {
               geometry.setAttribute(
                 "color",
-                new BufferAttribute(colorData.array, colorData.itemSize || 3)
+                new BufferAttribute(colorData.array, colorData.itemSize || 3),
               );
             }
 
@@ -415,8 +415,8 @@ class GLTFWorkerLoader extends GLTFLoader {
                 "tangent",
                 new BufferAttribute(
                   tangentData.array,
-                  tangentData.itemSize || 4
-                )
+                  tangentData.itemSize || 4,
+                ),
               );
             }
 
@@ -432,8 +432,8 @@ class GLTFWorkerLoader extends GLTFLoader {
                     normalizedName,
                     new BufferAttribute(
                       featureIdData.array,
-                      featureIdData.itemSize || 1
-                    )
+                      featureIdData.itemSize || 1,
+                    ),
                   );
                 }
               }
@@ -501,7 +501,7 @@ class GLTFWorkerLoader extends GLTFLoader {
           node.position.set(
             nodeData.translation[0],
             nodeData.translation[1],
-            nodeData.translation[2]
+            nodeData.translation[2],
           );
         }
         if (nodeData.rotation) {
@@ -509,14 +509,14 @@ class GLTFWorkerLoader extends GLTFLoader {
             nodeData.rotation[0],
             nodeData.rotation[1],
             nodeData.rotation[2],
-            nodeData.rotation[3]
+            nodeData.rotation[3],
           );
         }
         if (nodeData.scale) {
           node.scale.set(
             nodeData.scale[0],
             nodeData.scale[1],
-            nodeData.scale[2]
+            nodeData.scale[2],
           );
         }
       }
@@ -563,11 +563,11 @@ class GLTFWorkerLoader extends GLTFLoader {
         primitiveIndex: number;
         extensions?: PrimitiveExtensions;
       }>
-    >
+    >,
   ): void {
     const extensionsUsed = data.json?.extensionsUsed || [];
     const hasStructuralMetadata = extensionsUsed.includes(
-      EXT_STRUCTURAL_METADATA
+      EXT_STRUCTURAL_METADATA,
     );
     const hasMeshFeatures = extensionsUsed.includes(EXT_MESH_FEATURES);
 
@@ -611,7 +611,7 @@ class GLTFWorkerLoader extends GLTFLoader {
       if (!primitiveDataList) return;
 
       const primitiveData = primitiveDataList.find(
-        (p) => p.primitiveIndex === primitiveIndex
+        (p) => p.primitiveIndex === primitiveIndex,
       );
       if (!primitiveData) return;
 
@@ -638,7 +638,7 @@ class GLTFWorkerLoader extends GLTFLoader {
               textures,
               buffers,
               primMetadataExt,
-              child
+              child,
             );
           }
         } else {
@@ -654,7 +654,7 @@ class GLTFWorkerLoader extends GLTFLoader {
           child.userData.meshFeatures = new MeshFeatures(
             child.geometry,
             textures,
-            meshFeaturesExt
+            meshFeaturesExt,
           );
         }
       }
@@ -728,42 +728,3 @@ export class GLTFParserPlugin {
     releaseSharedWorker();
   }
 }
-
-/**
- * GLTF Worker 解析插件
- * 通过 tiles.manager.addHandler 注册自定义 GLTF Loader
- *
- * 支持的特性:
- * - 在 Worker 中解析 GLTF/GLB 文件
- * - 支持 Draco 压缩
- * - 支持 EXT_mesh_features 扩展 (metadata)
- * - 支持 EXT_structural_metadata 扩展 (metadata)
- *
- * 注意：此插件必须在 GLTFExtensionsPlugin 之前注册，否则会被覆盖
- *
- * @example
- * ```typescript
- * import { GLTFParserPlugin } from './GLTFParserPlugin';
- *
- * // 基本用法
- * const plugin = new GLTFParserPlugin();
- *
- * // 禁用 metadata 支持
- * const plugin = new GLTFParserPlugin({ metadata: false });
- *
- * // 添加到 TilesRenderer
- * tilesRenderer.registerPlugin(plugin);
- *
- * // 访问 metadata
- * scene.traverse((child) => {
- *   if (child.userData.structuralMetadata) {
- *     // 获取属性表数据
- *     const data = child.userData.structuralMetadata.getPropertyTableData(0, featureId);
- *   }
- *   if (child.userData.meshFeatures) {
- *     // 获取 feature ID
- *     const features = child.userData.meshFeatures.getFeatures(triangleIndex, barycoord);
- *   }
- * });
- * ```
- */

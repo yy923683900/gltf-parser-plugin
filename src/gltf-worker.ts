@@ -35,7 +35,12 @@ Promise.all([
     }
 
     // Function to dequantize Draco quantized data
-    function dequantizeAttribute(attrData: AttributeData, itemSize: number): Float32Array | (Float32Array | Uint16Array | Uint8Array | Int16Array | Int8Array) {
+    function dequantizeAttribute(
+      attrData: AttributeData,
+      itemSize: number,
+    ):
+      | Float32Array
+      | (Float32Array | Uint16Array | Uint8Array | Int16Array | Int8Array) {
       const { array, quantization: quant } = attrData;
 
       if (!quant) return array;
@@ -49,7 +54,9 @@ Promise.all([
         for (let i = 0; i < count; i++) {
           for (let j = 0; j < itemSize; j++) {
             const idx = i * itemSize + j;
-            result[idx] = (array[idx] / maxQuantizedValue) * quant.range + quant.minValues[j];
+            result[idx] =
+              (array[idx] / maxQuantizedValue) * quant.range +
+              quant.minValues[j];
           }
         }
       } else {
@@ -63,12 +70,18 @@ Promise.all([
     }
 
     // Oct-encoded normals decoding function
-    function decodeOctEncodedNormals(attrData: AttributeData): Float32Array | (Float32Array | Uint16Array | Uint8Array | Int16Array | Int8Array) {
+    function decodeOctEncodedNormals(
+      attrData: AttributeData,
+    ):
+      | Float32Array
+      | (Float32Array | Uint16Array | Uint8Array | Int16Array | Int8Array) {
       const { array, quantization: quant } = attrData;
 
       // If no octEncoded or already Float32Array and itemSize is 3
       if (!quant) {
-        return array instanceof Float32Array ? array : dequantizeAttribute(attrData, 3);
+        return array instanceof Float32Array
+          ? array
+          : dequantizeAttribute(attrData, 3);
       }
 
       const maxQuantizedValue = (1 << quant.quantizationBits) - 1;
@@ -100,7 +113,10 @@ Promise.all([
     }
 
     // Compute vertex normals using Three.js
-    function computeVertexNormals(posArray: Float32Array | any, indexArray: Uint16Array | Uint32Array | any) {
+    function computeVertexNormals(
+      posArray: Float32Array | any,
+      indexArray: Uint16Array | Uint32Array | any,
+    ) {
       const geometry = new BufferGeometry();
       geometry.setAttribute("position", new BufferAttribute(posArray, 3));
       if (indexArray) {
@@ -111,7 +127,11 @@ Promise.all([
     }
 
     // Process tangent data (may have oct-encoding)
-    function decodeTangent(attrData: AttributeData): Float32Array | (Float32Array | Uint16Array | Uint8Array | Int16Array | Int8Array) {
+    function decodeTangent(
+      attrData: AttributeData,
+    ):
+      | Float32Array
+      | (Float32Array | Uint16Array | Uint8Array | Int16Array | Int8Array) {
       const { array, quantization: quant } = attrData;
 
       if (!quant || !quant.octEncoded) {
@@ -161,12 +181,18 @@ Promise.all([
             if (!attributes) continue;
 
             // Helper to process and replace attribute
-            const processAndReplace = (key: string, itemSize: number, decoder?: (attr: AttributeData) => any) => {
+            const processAndReplace = (
+              key: string,
+              itemSize: number,
+              decoder?: (attr: AttributeData) => any,
+            ) => {
               const attr = attributes[key];
               if (attr && attr.array) {
                 const processed = decoder
                   ? decoder(attr)
-                  : (attr.quantization ? dequantizeAttribute(attr, itemSize) : attr.array);
+                  : attr.quantization
+                    ? dequantizeAttribute(attr, itemSize)
+                    : attr.array;
                 attributes[key] = { array: processed, itemSize };
                 addTransferable(processed);
                 return processed;
@@ -175,31 +201,38 @@ Promise.all([
             };
 
             // Process position
-            processAndReplace('POSITION', 3);
+            processAndReplace("POSITION", 3);
 
             // Process normals
-            const normalProcessed = processAndReplace('NORMAL', 3, decodeOctEncodedNormals);
+            const normalProcessed = processAndReplace(
+              "NORMAL",
+              3,
+              decodeOctEncodedNormals,
+            );
             if (!normalProcessed && attributes.POSITION) {
               // If no normal data, compute vertex normals
               const posArray = attributes.POSITION.array;
               const indexArray = indices ? indices.array : null;
-              const computedNormals = computeVertexNormals(posArray, indexArray);
+              const computedNormals = computeVertexNormals(
+                posArray,
+                indexArray,
+              );
               attributes.NORMAL = { array: computedNormals, itemSize: 3 };
               addTransferable(computedNormals);
             }
 
             // Process UV
-            processAndReplace('TEXCOORD_0', 2);
+            processAndReplace("TEXCOORD_0", 2);
 
             // Process vertex colors
             const colorData = attributes.COLOR_0;
             if (colorData && colorData.array) {
               const itemSize = colorData.type === "VEC4" ? 4 : 3;
-              processAndReplace('COLOR_0', itemSize);
+              processAndReplace("COLOR_0", itemSize);
             }
 
             // Process tangents
-            processAndReplace('TANGENT', 4, decodeTangent);
+            processAndReplace("TANGENT", 4, decodeTangent);
 
             // Process Feature ID attributes (for EXT_mesh_features)
             for (const attrName in attributes) {
@@ -252,7 +285,7 @@ Promise.all([
             decoders: {
               draco: dracoModule.default(),
             },
-          }
+          },
         )
           .then((data: any) => {
             if (data.message) {
@@ -266,21 +299,22 @@ Promise.all([
 
             // Complete dequantization and decoding in Worker
             try {
-                const { data: processedData, transferables } = processGLTFData(data);
-                self.postMessage(
-                  {
-                    type: "success",
-                    callback,
-                    data: processedData,
-                  },
-                  transferables
-                );
+              const { data: processedData, transferables } =
+                processGLTFData(data);
+              self.postMessage(
+                {
+                  type: "success",
+                  callback,
+                  data: processedData,
+                },
+                transferables,
+              );
             } catch (err: any) {
-                 self.postMessage({
-                    type: "error",
-                    callback,
-                    error: err.message || String(err),
-                  });
+              self.postMessage({
+                type: "error",
+                callback,
+                error: err.message || String(err),
+              });
             }
           })
           .catch((error: any) => {

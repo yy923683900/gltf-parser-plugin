@@ -20,23 +20,25 @@ npm install gltf-parser-plugin
 在 `3d-tiles-renderer` 实例中注册插件：
 
 ```typescript
-import { TilesRenderer } from '3d-tiles-renderer';
-import { GLTFParserPlugin } from 'gltf-parser-plugin';
+import { TilesRenderer } from "3d-tiles-renderer";
+import { GLTFParserPlugin } from "gltf-parser-plugin";
 
-const tilesRenderer = new TilesRenderer('path/to/tileset.json');
+const tilesRenderer = new TilesRenderer("path/to/tileset.json");
 
 // 注册插件
-tilesRenderer.registerPlugin(new GLTFParserPlugin({
-    metadata: true // 启用元数据解析 (默认: true)
-}));
+tilesRenderer.registerPlugin(
+  new GLTFParserPlugin({
+    metadata: true, // 启用元数据解析 (默认: true)
+  }),
+);
 ```
 
 ## 配置选项
 
 ### `GLTFParserPluginOptions`
 
-| 选项 | 类型 | 默认值 | 描述 |
-|--------|------|---------|-------------|
+| 选项       | 类型      | 默认值 | 描述                                                             |
+| ---------- | --------- | ------ | ---------------------------------------------------------------- |
 | `metadata` | `boolean` | `true` | 是否解析 `EXT_mesh_features` 和 `EXT_structural_metadata` 扩展。 |
 
 ## 环境要求
