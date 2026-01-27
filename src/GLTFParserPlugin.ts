@@ -38,7 +38,7 @@ const EXT_STRUCTURAL_METADATA = "EXT_structural_metadata";
 const EXT_MESH_FEATURES = "EXT_mesh_features";
 
 // Worker URL
-const WORKER_URL = new URL("./gltf-worker.js", import.meta.url).href;
+const WORKER_URL = new URL("./gltf-worker.ts", import.meta.url).href;
 
 // Worker 池管理
 let sharedWorker: Worker | null = null;
