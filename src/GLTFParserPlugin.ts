@@ -25,8 +25,6 @@ import type {
   PrimitiveExtensions,
 } from "./types";
 
-import {  } from "3d-tiles-renderer";
-
 // Metadata classes from renderer-plugin
 // @ts-expect-error - No type declarations for these JS modules
 import { StructuralMetadata } from "3d-tiles-renderer/src/three/plugins/gltf/metadata/classes/StructuralMetadata.js";
