@@ -1,7 +1,7 @@
 import { defineConfig } from "vitest/config";
 import dts from "vite-plugin-dts";
 import { resolve } from "path";
-import { analyzer } from "vite-bundle-analyzer";
+// import { analyzer } from "vite-bundle-analyzer";
 
 export default defineConfig({
   plugins: [
@@ -9,9 +9,9 @@ export default defineConfig({
       insertTypesEntry: true,
       rollupTypes: true,
     }),
-    analyzer({
-      analyzerPort: 8999,
-    }),
+    // analyzer({
+    //   analyzerPort: 8999,
+    // }),
   ],
   server: {
     port: 3000,

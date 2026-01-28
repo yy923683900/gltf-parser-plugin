@@ -33,7 +33,7 @@ const EXT_STRUCTURAL_METADATA = "EXT_structural_metadata";
 const EXT_MESH_FEATURES = "EXT_mesh_features";
 
 // 导入内联 Worker (Vite 会将 worker 代码编译打包成 base64 data URL)
-import GLTFWorkerClass from "./gltf-worker?worker&inline";
+import GLTFWorkerClass from "./worker/index?worker&inline";
 
 // Worker 池管理
 let sharedWorker: Worker | null = null;
