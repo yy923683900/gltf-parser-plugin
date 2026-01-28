@@ -1,5 +1,5 @@
 // EXT_mesh_features extension data
-export interface MeshFeaturesExtension {
+interface MeshFeaturesExtension {
   featureIds: Array<{
     featureCount: number;
     propertyTable?: number;
@@ -15,7 +15,7 @@ export interface MeshFeaturesExtension {
 }
 
 // EXT_structural_metadata extension data
-export interface StructuralMetadataExtension {
+interface StructuralMetadataExtension {
   schema: {
     id?: string;
     name?: string;

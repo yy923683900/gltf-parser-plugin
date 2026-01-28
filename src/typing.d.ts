@@ -1,5 +1,5 @@
-declare module "@maptalks/gltf-loader"
-declare module "@maptalks/transcoders.draco"
+declare module "@maptalks/gltf-loader";
+declare module "@maptalks/transcoders.draco";
 
 // Vite inline worker 类型声明
 declare module "*?worker&inline" {

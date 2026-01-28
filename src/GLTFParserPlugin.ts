@@ -14,12 +14,8 @@ import {
   Scene,
   Texture,
   UnsignedByteType,
-  Loader
+  Loader,
 } from "three";
-// import {
-//   GLTFLoader,
-//   type GLTF,
-// } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type {
   GLTFNodeData,
   GLTFWorkerData,
