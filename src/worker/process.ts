@@ -28,12 +28,14 @@ export function processGLTFData(data: any): {
   ) => {
     const attr = attributes[key];
     if (attr && attr.array) {
-      // if else
-      const processed = decoder
-        ? decoder(attr)
-        : attr.quantization
-          ? dequantizeAttribute(attr, itemSize)
-          : attr.array;
+      let processed;
+      if (decoder) {
+        processed = decoder(attr);
+      } else if (attr.quantization) {
+        processed = dequantizeAttribute(attr, itemSize);
+      } else {
+        processed = attr.array;
+      }
       attributes[key] = { array: processed, itemSize };
       addTransferable(processed);
       return processed;

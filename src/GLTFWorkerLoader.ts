@@ -8,14 +8,6 @@ import {
   Texture,
   Loader,
 } from "three";
-import type { GLTFNodeData, GLTFWorkerData } from "./types";
-
-// Metadata classes from renderer-plugin
-// @ts-expect-error - No type declarations for these JS modules
-import { StructuralMetadata } from "3d-tiles-renderer/src/three/plugins/gltf/metadata/classes/StructuralMetadata.js";
-// @ts-expect-error - No type declarations for these JS modules
-import { MeshFeatures } from "3d-tiles-renderer/src/three/plugins/gltf/metadata/classes/MeshFeatures.js";
-
 import {
   getSharedWorker,
   getWorkerReadyPromise,
@@ -24,6 +16,9 @@ import {
   buildMeshPrimitives,
   type PrimitiveData,
 } from "./utils";
+import type { GLTFNodeData, GLTFWorkerData } from "./types";
+import { StructuralMetadata } from "3d-tiles-renderer/src/three/plugins/gltf/metadata/classes/StructuralMetadata.js";
+import { MeshFeatures } from "3d-tiles-renderer/src/three/plugins/gltf/metadata/classes/MeshFeatures.js";
 
 // Extension names
 const EXT_STRUCTURAL_METADATA = "EXT_structural_metadata";
@@ -259,7 +254,7 @@ export class GLTFWorkerLoader extends Loader {
     }
 
     // 处理 EXT_structural_metadata
-    let rootMetadata: StructuralMetadata | null = null;
+    let rootMetadata: any = null;
     if (hasStructuralMetadata && data.structuralMetadata) {
       const rootExtension = data.json?.extensions?.[EXT_STRUCTURAL_METADATA];
       if (rootExtension) {
