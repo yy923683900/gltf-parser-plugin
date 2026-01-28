@@ -1,6 +1,6 @@
 import type { AttributeData } from "./types";
 import { dequantizeAttribute } from "./dequantize";
-import { decodeOctEncodedNormals, computeVertexNormals } from "./normals";
+import { computeVertexNormals } from "./normals";
 import { decodeTangent } from "./tangent";
 
 /**
@@ -12,9 +12,33 @@ export function processGLTFData(data: any): {
   data: any;
   transferables: ArrayBuffer[];
 } {
-  const transferables = new Set<ArrayBuffer>();
+  const transferables = data.transferables || [];
   const addTransferable = (arr: any) => {
-    if (arr && arr.buffer) transferables.add(arr.buffer);
+    if (arr && arr.buffer && !transferables.includes(arr.buffer)) {
+      transferables.push(arr.buffer);
+    }
+  };
+
+  // Helper to process and replace attribute
+  const processAndReplace = (
+    key: string,
+    itemSize: number,
+    attributes: Record<string, AttributeData>,
+    decoder?: (attr: AttributeData) => any,
+  ) => {
+    const attr = attributes[key];
+    if (attr && attr.array) {
+      // if else
+      const processed = decoder
+        ? decoder(attr)
+        : attr.quantization
+          ? dequantizeAttribute(attr, itemSize)
+          : attr.array;
+      attributes[key] = { array: processed, itemSize };
+      addTransferable(processed);
+      return processed;
+    }
+    return null;
   };
 
   if (data.meshes) {
@@ -22,38 +46,12 @@ export function processGLTFData(data: any): {
       for (const primitive of meshData.primitives) {
         const { attributes, indices } = primitive;
         if (!attributes) continue;
-
-        // Helper to process and replace attribute
-        const processAndReplace = (
-          key: string,
-          itemSize: number,
-          decoder?: (attr: AttributeData) => any,
-        ) => {
-          const attr = attributes[key];
-          if (attr && attr.array) {
-            const processed = decoder
-              ? decoder(attr)
-              : attr.quantization
-                ? dequantizeAttribute(attr, itemSize)
-                : attr.array;
-            attributes[key] = { array: processed, itemSize };
-            addTransferable(processed);
-            return processed;
-          }
-          return null;
-        };
-
         // Process position
-        processAndReplace("POSITION", 3);
+        processAndReplace("POSITION", 3, attributes);
 
         // Process normals
-        const normalProcessed = processAndReplace(
-          "NORMAL",
-          3,
-          decodeOctEncodedNormals,
-        );
-        if (!normalProcessed && attributes.POSITION) {
-          // If no normal data, compute vertex normals
+        if (attributes.POSITION) {
+          // compute vertex normals
           const posArray = attributes.POSITION.array;
           const indexArray = indices ? indices.array : null;
           const computedNormals = computeVertexNormals(posArray, indexArray);
@@ -62,22 +60,22 @@ export function processGLTFData(data: any): {
         }
 
         // Process UV
-        processAndReplace("TEXCOORD_0", 2);
+        processAndReplace("TEXCOORD_0", 2, attributes);
 
         // Process vertex colors
         const colorData = attributes.COLOR_0;
         if (colorData && colorData.array) {
           const itemSize = colorData.type === "VEC4" ? 4 : 3;
-          processAndReplace("COLOR_0", itemSize);
+          processAndReplace("COLOR_0", itemSize, attributes);
         }
 
         // Process tangents
-        processAndReplace("TANGENT", 4, decodeTangent);
+        processAndReplace("TANGENT", 4, attributes, decodeTangent);
 
         // Process Feature ID attributes (for EXT_mesh_features)
         for (const attrName in attributes) {
           if (attrName.startsWith("_FEATURE_ID_")) {
-            processAndReplace(attrName, 1);
+            processAndReplace(attrName, 1, attributes);
           }
         }
 
@@ -91,23 +89,5 @@ export function processGLTFData(data: any): {
     }
   }
 
-  // Process texture data
-  if (data.textures) {
-    for (const textureData of data.textures) {
-      if (textureData.image && textureData.image.array) {
-        addTransferable(textureData.image.array);
-      }
-    }
-  }
-
-  // Process structuralMetadata buffers
-  if (data.structuralMetadata && data.structuralMetadata.buffers) {
-    for (const buf of data.structuralMetadata.buffers) {
-      if (buf) transferables.add(buf);
-    }
-  }
-
-  data.transferables = [];
-
-  return { data, transferables: Array.from(transferables) };
+  return { data, transferables };
 }

@@ -15,6 +15,7 @@ export function dequantizeAttribute(
   if (!quant) return array;
 
   const count = array.length / itemSize;
+  // TODO 利用arraybuffer.resize方法复用array
   const result = new Float32Array(array.length);
   const maxQuantizedValue = (1 << quant.quantizationBits) - 1;
 

@@ -61,8 +61,16 @@ export function computeVertexNormals(
 
   // Helper: get triangle indices
   const getTriangleIndices = indexArray
-    ? (i: number) => [indexArray[i], indexArray[i + 1], indexArray[i + 2]]
-    : (i: number) => [i, i + 1, i + 2];
+    ? (out: number[], i: number) => {
+        out[0] = indexArray[i];
+        out[1] = indexArray[i + 1];
+        out[2] = indexArray[i + 2];
+      }
+    : (out: number[], i: number) => {
+        out[0] = i;
+        out[1] = i + 1;
+        out[2] = i + 2;
+      };
 
   const triangleCount = indexArray ? indexArray.length / 3 : vertexCount / 3;
 
@@ -73,22 +81,24 @@ export function computeVertexNormals(
   const cb = [0, 0, 0];
   const ab = [0, 0, 0];
 
+  const out = [0, 0, 0];
   // Accumulate face normals to vertices
   for (let i = 0; i < triangleCount; i++) {
-    const [ia, ib, ic] = getTriangleIndices(i * 3);
+    // 效率低,out参数
+    getTriangleIndices(out, i * 3);
 
     // Get vertex positions
-    pA[0] = posArray[ia * 3];
-    pA[1] = posArray[ia * 3 + 1];
-    pA[2] = posArray[ia * 3 + 2];
+    pA[0] = posArray[out[0] * 3];
+    pA[1] = posArray[out[0] * 3 + 1];
+    pA[2] = posArray[out[0] * 3 + 2];
 
-    pB[0] = posArray[ib * 3];
-    pB[1] = posArray[ib * 3 + 1];
-    pB[2] = posArray[ib * 3 + 2];
+    pB[0] = posArray[out[1] * 3];
+    pB[1] = posArray[out[1] * 3 + 1];
+    pB[2] = posArray[out[1] * 3 + 2];
 
-    pC[0] = posArray[ic * 3];
-    pC[1] = posArray[ic * 3 + 1];
-    pC[2] = posArray[ic * 3 + 2];
+    pC[0] = posArray[out[2] * 3];
+    pC[1] = posArray[out[2] * 3 + 1];
+    pC[2] = posArray[out[2] * 3 + 2];
 
     // Calculate edge vectors: cb = pC - pB, ab = pA - pB
     cb[0] = pC[0] - pB[0];
@@ -105,17 +115,17 @@ export function computeVertexNormals(
     const nz = cb[0] * ab[1] - cb[1] * ab[0];
 
     // Accumulate face normal to each vertex of the triangle
-    normals[ia * 3] += nx;
-    normals[ia * 3 + 1] += ny;
-    normals[ia * 3 + 2] += nz;
+    normals[out[0] * 3] += nx;
+    normals[out[0] * 3 + 1] += ny;
+    normals[out[0] * 3 + 2] += nz;
 
-    normals[ib * 3] += nx;
-    normals[ib * 3 + 1] += ny;
-    normals[ib * 3 + 2] += nz;
+    normals[out[1] * 3] += nx;
+    normals[out[1] * 3 + 1] += ny;
+    normals[out[1] * 3 + 2] += nz;
 
-    normals[ic * 3] += nx;
-    normals[ic * 3 + 1] += ny;
-    normals[ic * 3 + 2] += nz;
+    normals[out[2] * 3] += nx;
+    normals[out[2] * 3 + 1] += ny;
+    normals[out[2] * 3 + 2] += nz;
   }
 
   // Normalize all vertex normals

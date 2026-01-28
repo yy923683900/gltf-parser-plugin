@@ -18,9 +18,9 @@ function load(root: string, data: any, options: any) {
  * Worker message handler
  */
 self.onmessage = function (event: MessageEvent) {
-  const { type, fetchOptions, callback, buffer, root } = event.data;
+  const { method, fetchOptions, loaderId, buffer, root } = event.data;
 
-  if (type === "parseBuffer") {
+  if (method === "parseTile") {
     load(
       root || "",
       { buffer: buffer, byteOffset: 0 },
@@ -36,7 +36,7 @@ self.onmessage = function (event: MessageEvent) {
         if (data.message) {
           self.postMessage({
             type: "error",
-            callback,
+            loaderId,
             error: data.message,
           });
           return;
@@ -48,7 +48,7 @@ self.onmessage = function (event: MessageEvent) {
           self.postMessage(
             {
               type: "success",
-              callback,
+              loaderId,
               data: processedData,
             },
             transferables,
@@ -56,7 +56,7 @@ self.onmessage = function (event: MessageEvent) {
         } catch (err: any) {
           self.postMessage({
             type: "error",
-            callback,
+            loaderId,
             error: err.message || String(err),
           });
         }
@@ -64,7 +64,7 @@ self.onmessage = function (event: MessageEvent) {
       .catch((error: any) => {
         self.postMessage({
           type: "error",
-          callback,
+          loaderId,
           error: error.message || String(error),
         });
       });
