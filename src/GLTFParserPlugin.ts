@@ -14,11 +14,12 @@ import {
   Scene,
   Texture,
   UnsignedByteType,
+  Loader
 } from "three";
-import {
-  GLTFLoader,
-  type GLTF,
-} from "three/examples/jsm/loaders/GLTFLoader.js";
+// import {
+//   GLTFLoader,
+//   type GLTF,
+// } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type {
   GLTFNodeData,
   GLTFWorkerData,
@@ -35,8 +36,8 @@ import { MeshFeatures } from "3d-tiles-renderer/src/three/plugins/gltf/metadata/
 const EXT_STRUCTURAL_METADATA = "EXT_structural_metadata";
 const EXT_MESH_FEATURES = "EXT_mesh_features";
 
-// Worker URL
-const WORKER_URL = new URL("./gltf-worker.ts", import.meta.url).href;
+// 导入内联 Worker (Vite 会将 worker 代码编译打包成 base64 data URL)
+import GLTFWorkerClass from "./gltf-worker?worker&inline";
 
 // Worker 池管理
 let sharedWorker: Worker | null = null;
@@ -50,7 +51,8 @@ function initSharedWorker(): Promise<void> {
   workerRefCount++;
 
   if (!sharedWorker) {
-    sharedWorker = new Worker(WORKER_URL, { type: "module" });
+    // 使用 Vite 内联 Worker，代码已被编译打包成 base64
+    sharedWorker = new GLTFWorkerClass();
     workerReadyPromise = new Promise((resolve, reject) => {
       const onMessage = (event: MessageEvent) => {
         if (event.data.type === "ready") {
@@ -101,7 +103,7 @@ interface MeshAssociation {
 /**
  * 使用 Worker 解析 GLTF 的自定义 Loader
  */
-class GLTFWorkerLoader extends GLTFLoader {
+class GLTFWorkerLoader extends Loader {
   private _metadata: boolean = true;
 
   constructor(manager?: LoadingManager, options?: GLTFWorkerLoaderOptions) {
@@ -112,7 +114,7 @@ class GLTFWorkerLoader extends GLTFLoader {
   /**
    * 异步解析 GLTF buffer
    */
-  async parseAsync(buffer: ArrayBuffer, path: string): Promise<GLTF> {
+  async parseAsync(buffer: ArrayBuffer, path: string): Promise<any> {
     await workerReadyPromise;
 
     if (!sharedWorker) {
