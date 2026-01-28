@@ -1,7 +1,6 @@
 import { defineConfig } from "vitest/config";
 import dts from "vite-plugin-dts";
 import { resolve } from "path";
-// import { analyzer } from "vite-bundle-analyzer";
 
 export default defineConfig({
   plugins: [
@@ -9,9 +8,6 @@ export default defineConfig({
       insertTypesEntry: true,
       rollupTypes: true,
     }),
-    // analyzer({
-    //   analyzerPort: 8999,
-    // }),
   ],
   server: {
     port: 3000,
@@ -40,28 +36,28 @@ export default defineConfig({
       output: {
         globals: {},
       },
-      // treeshake: {
-      //   moduleSideEffects: false,
-      //   propertyReadSideEffects: false,
-      // },
+      treeshake: {
+        moduleSideEffects: false,
+        propertyReadSideEffects: false,
+      },
     },
     sourcemap: true,
-    minify: true,
-    // minify: "terser",
-    // terserOptions: {
-    //   compress: {
-    //     drop_console: true,
-    //     drop_debugger: true,
-    //     pure_funcs: ["console.log", "console.info", "console.debug"],
-    //     passes: 2,
-    //   },
-    //   mangle: {
-    //     properties: false,
-    //   },
-    //   format: {
-    //     comments: false,
-    //   },
-    // },
+    // minify: true,
+    minify: "terser",
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        pure_funcs: ["console.log", "console.info", "console.debug"],
+        passes: 2,
+      },
+      mangle: {
+        properties: false,
+      },
+      format: {
+        comments: false,
+      },
+    },
   },
   test: {
     environment: "node",
