@@ -67,6 +67,10 @@ export class GLTFParserPlugin {
       this.tiles.manager.removeHandler(this._gltfRegex);
     }
 
+    // 移除 Worker 监听器
+    if (this._loader) {
+      this._loader.removeListeners();
+    }
     this._loader = null;
     this.tiles = null;
   }

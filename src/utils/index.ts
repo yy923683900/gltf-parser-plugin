@@ -4,4 +4,4 @@ export {
   buildMeshPrimitives,
   type PrimitiveData,
 } from "./build-mesh-primitives";
-export { acquireWorker, setMaxWorkers } from "./worker-pool";
+export { acquireWorker, setMaxWorkers, getWorkers } from "./worker-pool";

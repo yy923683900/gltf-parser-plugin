@@ -32,6 +32,11 @@ function initWorkerPool() {
   }
 }
 
+export function getWorkers(): Worker[] {
+  initWorkerPool();
+  return workerPool;
+}
+
 /**
  * 获取一个 Worker（如果没有空闲的则等待）
  * @returns Promise 解析为可用的 Worker

@@ -14,6 +14,7 @@ import {
   buildMaterials,
   buildMeshPrimitives,
   type PrimitiveData,
+  getWorkers,
 } from "./utils";
 import type { GLTFNodeData, GLTFWorkerData } from "./types";
 import { StructuralMetadata } from "3d-tiles-renderer/src/three/plugins/gltf/metadata/classes/StructuralMetadata.js";
@@ -47,10 +48,31 @@ let uuid = 0;
 export class GLTFWorkerLoader extends Loader {
   private _metadata: boolean = true;
   loaderId = uuid++;
+  private _callbacks = new Map<
+    number,
+    { resolve: (data: any) => void; reject: (err: Error) => void }
+  >();
+  private _nextRequestId = 1;
 
   constructor(manager?: LoadingManager, options?: GLTFWorkerLoaderOptions) {
     super(manager);
     this._metadata = options?.metadata ?? true;
+
+    this.addListeners();
+  }
+
+  addListeners() {
+    const workers = getWorkers();
+    workers.forEach((worker) => {
+      worker.addEventListener("message", this._onMessage);
+    });
+  }
+
+  removeListeners() {
+    const workers = getWorkers();
+    workers.forEach((worker) => {
+      worker.removeEventListener("message", this._onMessage);
+    });
   }
 
   /**
@@ -90,21 +112,8 @@ export class GLTFWorkerLoader extends Loader {
     workingPath: string,
   ): Promise<GLTFWorkerData> {
     return new Promise((resolve, reject) => {
-      const onMessage = (event: MessageEvent) => {
-        const { type, data, error, loaderId } = event.data;
-
-        if (loaderId !== this.loaderId) return;
-
-        worker.removeEventListener("message", onMessage);
-
-        if (type === "success") {
-          resolve(data);
-        } else if (type === "error") {
-          reject(new Error(error));
-        }
-      };
-
-      worker.addEventListener("message", onMessage);
+      const requestId = this._nextRequestId++;
+      this._callbacks.set(requestId, { resolve, reject });
 
       // 发送 buffer 和工作路径给 worker
       worker.postMessage(
@@ -112,12 +121,28 @@ export class GLTFWorkerLoader extends Loader {
           method: "parseTile",
           buffer: buffer,
           root: workingPath,
-          loaderId: this.loaderId,
+          loaderId: requestId, // Use requestId as loaderId for the worker
         },
         [buffer],
       );
     });
   }
+
+  private _onMessage = (event: MessageEvent) => {
+    const { type, data, error, loaderId } = event.data;
+
+    // loaderId here is our requestId
+    const callback = this._callbacks.get(loaderId);
+    if (!callback) return;
+
+    this._callbacks.delete(loaderId);
+
+    if (type === "success") {
+      callback.resolve(data);
+    } else if (type === "error") {
+      callback.reject(new Error(error));
+    }
+  };
 
   /**
    * 将 Worker 返回的 GLTF 数据转换成 Three.js Scene
