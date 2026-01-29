@@ -9,8 +9,7 @@ import {
   Loader,
 } from "three";
 import {
-  getSharedWorker,
-  getWorkerReadyPromise,
+  acquireWorker,
   buildTextures,
   buildMaterials,
   buildMeshPrimitives,
@@ -58,23 +57,19 @@ export class GLTFWorkerLoader extends Loader {
    * 异步解析 GLTF buffer
    */
   async parseAsync(buffer: ArrayBuffer, path: string): Promise<any> {
-    await getWorkerReadyPromise();
-
-    const worker = getSharedWorker();
-    if (!worker) {
-      throw new Error("GLTFWorkerLoader: Worker not initialized");
-    }
+    // 获取可用 Worker（如果都忙则等待）
+    const worker = acquireWorker();
 
     // 使用 worker 解析
-    const data = await this.parseWithWorker(buffer, path);
+    const data = await this.parseWithWorker(worker, buffer, path);
 
     // 构建 Three.js 场景
     const scene = this.buildSceneFromGLTFData(data);
 
-    // 返回完整的 GLTF 对象
+    // 返回与GLTFLoader相同的格式
     return {
-      scene: scene as unknown as Group,
-      scenes: [scene as unknown as Group],
+      scene: scene,
+      scenes: [scene],
       animations: [],
       cameras: [],
       asset: {
@@ -90,16 +85,11 @@ export class GLTFWorkerLoader extends Loader {
    * 使用 Worker 解析 GLTF 数据
    */
   private parseWithWorker(
+    worker: Worker,
     buffer: ArrayBuffer,
     workingPath: string,
   ): Promise<GLTFWorkerData> {
     return new Promise((resolve, reject) => {
-      const worker = getSharedWorker();
-      if (!worker) {
-        reject(new Error("Worker not available"));
-        return;
-      }
-
       const onMessage = (event: MessageEvent) => {
         const { type, data, error, loaderId } = event.data;
 

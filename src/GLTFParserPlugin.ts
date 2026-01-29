@@ -1,5 +1,5 @@
 import { GLTFWorkerLoader } from "./GLTFWorkerLoader";
-import { initSharedWorker, releaseSharedWorker } from "./utils";
+import { setMaxWorkers } from "./utils";
 
 /**
  * GLTFParserPlugin 配置选项
@@ -11,6 +11,12 @@ export interface GLTFParserPluginOptions {
    * @default true
    */
   metadata?: boolean;
+  /**
+   * Worker 池中最大 Worker 数量
+   * 最大值为 navigator.hardwareConcurrency
+   * @default navigator.hardwareConcurrency
+   */
+  maxWorkers?: number;
 }
 
 export class GLTFParserPlugin {
@@ -29,11 +35,12 @@ export class GLTFParserPlugin {
     console.log("GLTFParserPlugin constructor");
     this._options = {
       metadata: true,
+      maxWorkers: navigator.hardwareConcurrency || 4,
       ...options,
     };
 
-    // 初始化共享 worker
-    initSharedWorker();
+    // 设置 Worker 池大小并初始化
+    setMaxWorkers(this._options.maxWorkers!);
   }
 
   /**
@@ -62,8 +69,5 @@ export class GLTFParserPlugin {
 
     this._loader = null;
     this.tiles = null;
-
-    // 释放 worker 引用
-    releaseSharedWorker();
   }
 }

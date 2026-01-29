@@ -2,60 +2,44 @@
 import GLTFWorkerClass from "../worker/index?worker&inline";
 
 // Worker 池管理
-let sharedWorker: Worker | null = null;
-let workerRefCount = 0;
-let workerReadyPromise: Promise<void> | null = null;
+let workerPool: Worker[] = [];
+let maxWorkers = 1;
+let currentWorkerIndex = 0;
 
 /**
- * 获取共享 Worker 实例
+ * 设置最大 Worker 数量（必须在初始化之前调用）
  */
-export function getSharedWorker(): Worker | null {
-  return sharedWorker;
+export function setMaxWorkers(count: number): void {
+  maxWorkers = Math.max(1, Math.min(count, navigator.hardwareConcurrency || 4));
 }
 
 /**
- * 获取 Worker 就绪 Promise
+ * 创建单个 Worker 并等待其就绪
  */
-export function getWorkerReadyPromise(): Promise<void> | null {
-  return workerReadyPromise;
+function createWorker(): Worker {
+  return new GLTFWorkerClass();
 }
 
 /**
- * 初始化共享 Worker
+ * 初始化 Worker 池
  */
-export function initSharedWorker(): Promise<void> {
-  workerRefCount++;
-
-  if (!sharedWorker) {
-    // 使用 Vite 内联 Worker，代码已被编译打包成 base64
-    sharedWorker = new GLTFWorkerClass();
-    workerReadyPromise = new Promise((resolve, reject) => {
-      const onMessage = (event: MessageEvent) => {
-        if (event.data.type === "ready") {
-          sharedWorker?.removeEventListener("message", onMessage);
-          resolve();
-        } else if (event.data.type === "error" && !event.data.callback) {
-          sharedWorker?.removeEventListener("message", onMessage);
-          reject(new Error(event.data.error));
-        }
-      };
-      sharedWorker!.addEventListener("message", onMessage);
-    });
+function initWorkerPool() {
+  if (workerPool.length === 0) {
+    // 创建所有 Worker
+    for (let i = 0; i < maxWorkers; i++) {
+      workerPool.push(createWorker());
+    }
   }
-
-  return workerReadyPromise!;
 }
 
 /**
- * 释放共享 Worker 引用
+ * 获取一个 Worker（如果没有空闲的则等待）
+ * @returns Promise 解析为可用的 Worker
  */
-export function releaseSharedWorker(): void {
-  workerRefCount--;
+export function acquireWorker() {
+  initWorkerPool();
 
-  if (workerRefCount <= 0 && sharedWorker) {
-    sharedWorker.terminate();
-    sharedWorker = null;
-    workerReadyPromise = null;
-    workerRefCount = 0;
-  }
+  const worker = workerPool[currentWorkerIndex];
+  currentWorkerIndex = (currentWorkerIndex + 1) % workerPool.length;
+  return worker;
 }
