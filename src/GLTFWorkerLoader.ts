@@ -32,14 +32,6 @@ export interface GLTFWorkerLoaderOptions {
   metadata?: boolean;
 }
 
-/**
- * Mesh associations - 映射 Three.js Mesh 到原始的 mesh/primitive 索引
- */
-interface MeshAssociation {
-  meshes: number;
-  primitives: number;
-}
-
 let uuid = 0;
 
 /**
@@ -152,9 +144,6 @@ export class GLTFWorkerLoader extends Loader {
   private buildSceneFromGLTFData(data: GLTFWorkerData): Scene {
     const scene = new Scene();
 
-    // Mesh associations - 映射 Three.js Mesh 到原始的 mesh/primitive 索引
-    const associations = new Map<Mesh, MeshAssociation>();
-
     // 构建纹理
     const { textureMap, textureArray } = buildTextures(data);
 
@@ -179,13 +168,10 @@ export class GLTFWorkerLoader extends Loader {
           primitiveIndex,
         } of primitiveDataList) {
           const mesh = new Mesh(geometry, material);
+          // 记录 mesh 对应的原始 GLTF 索引
+          mesh.userData._gltfMeshIndex = nodeData.mesh;
+          mesh.userData._gltfPrimitiveIndex = primitiveIndex;
           node.add(mesh);
-
-          // 记录 mesh associations
-          associations.set(mesh, {
-            meshes: nodeData.mesh,
-            primitives: primitiveIndex,
-          });
         }
       }
 
@@ -244,7 +230,7 @@ export class GLTFWorkerLoader extends Loader {
 
     // 处理 metadata (如果启用)
     if (this._metadata) {
-      this.processMetadata(scene, data, associations, textureArray, meshMap);
+      this.processMetadata(scene, data, textureArray, meshMap);
     }
 
     return scene;
@@ -256,7 +242,6 @@ export class GLTFWorkerLoader extends Loader {
   private processMetadata(
     scene: Scene,
     data: GLTFWorkerData,
-    associations: Map<Mesh, MeshAssociation>,
     textures: (Texture | null)[],
     meshMap: Map<number, PrimitiveData[]>,
   ): void {
@@ -292,10 +277,9 @@ export class GLTFWorkerLoader extends Loader {
     scene.traverse((child) => {
       if (!(child instanceof Mesh)) return;
 
-      const association = associations.get(child);
-      if (!association) return;
-
-      const { meshes: meshIndex, primitives: primitiveIndex } = association;
+      const meshIndex = child.userData._gltfMeshIndex as number | undefined;
+      const primitiveIndex = child.userData._gltfPrimitiveIndex as number | undefined;
+      if (meshIndex === undefined || primitiveIndex === undefined) return;
 
       const primitiveDataList = meshMap.get(meshIndex);
       if (!primitiveDataList) return;
