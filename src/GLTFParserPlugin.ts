@@ -24,6 +24,18 @@ export interface GLTFParserPluginOptions {
    * 用于处理 GLTF 材质扩展或自定义材质逻辑
    */
   materialBuilder?: MaterialBuilder;
+
+  /**
+   * 解析前回调函数
+   * 用于在解析 GLTF 前对缓冲区进行预处理
+   */
+  beforeParseTile?: (
+    buffer: ArrayBuffer,
+    tile: any,
+    extension: any,
+    uri: string,
+    abortSignal: AbortSignal,
+  ) => Promise<ArrayBuffer>;
 }
 
 export class GLTFParserPlugin {
@@ -64,6 +76,26 @@ export class GLTFParserPlugin {
 
     // 使用正则表达式匹配 .gltf 和 .glb 文件
     tiles.manager.addHandler(this._gltfRegex, this._loader);
+  }
+
+  async parseTile(
+    buffer: ArrayBuffer,
+    tile: any,
+    extension: any,
+    uri: string,
+    abortSignal: AbortSignal,
+  ) {
+    // 调用解析前回调函数
+    if (this._options.beforeParseTile) {
+      buffer = await this._options.beforeParseTile(
+        buffer,
+        tile,
+        extension,
+        uri,
+        abortSignal,
+      );
+    }
+    return this.tiles.parseTile(buffer, tile, extension, uri, abortSignal);
   }
 
   /**
