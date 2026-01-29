@@ -13,7 +13,7 @@ export interface TextureBuildResult {
 }
 
 /**
- * 从 GLTF 数据构建纹理
+ * Build textures from GLTF data
  */
 export function buildTextures(data: GLTFWorkerData): TextureBuildResult {
   const textureMap = new Map<number, Texture>();
@@ -41,7 +41,7 @@ export function buildTextures(data: GLTFWorkerData): TextureBuildResult {
       continue;
     }
 
-    // 默认空纹理
+    // Default empty texture
     const texture = new Texture();
     texture.flipY = false;
     textureMap.set(index, texture);

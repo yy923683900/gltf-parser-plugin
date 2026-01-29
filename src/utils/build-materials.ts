@@ -8,7 +8,7 @@ import {
 import type { GLTFWorkerData, MaterialBuilder } from "../types";
 
 /**
- * 从 GLTF 数据构建材质
+ * Build materials from GLTF data
  */
 export function buildMaterials(
   data: GLTFWorkerData,
@@ -38,11 +38,11 @@ function defaultMaterialBuilder(
 ): Material {
   const material = new MeshStandardMaterial();
 
-  // PBR材质属性
+  // PBR material properties
   if (matData.pbrMetallicRoughness) {
     const pbr = matData.pbrMetallicRoughness;
 
-    // 基础颜色
+    // Base color
     if (pbr.baseColorFactor) {
       material.color.setRGB(
         pbr.baseColorFactor[0],
@@ -55,7 +55,7 @@ function defaultMaterialBuilder(
       }
     }
 
-    // 基础颜色纹理
+    // Base color texture
     if (pbr.baseColorTexture && pbr.baseColorTexture.index !== undefined) {
       const tex = textureMap.get(pbr.baseColorTexture.index);
       if (tex) {
@@ -63,13 +63,13 @@ function defaultMaterialBuilder(
       }
     }
 
-    // 金属度和粗糙度
+    // Metalness and roughness
     material.metalness =
       pbr.metallicFactor !== undefined ? pbr.metallicFactor : 1.0;
     material.roughness =
       pbr.roughnessFactor !== undefined ? pbr.roughnessFactor : 1.0;
 
-    // 金属粗糙度纹理
+    // Metallic roughness texture
     if (
       pbr.metallicRoughnessTexture &&
       pbr.metallicRoughnessTexture.index !== undefined
@@ -81,7 +81,7 @@ function defaultMaterialBuilder(
     }
   }
 
-  // 法线贴图
+  // Normal map
   if (matData.normalTexture && matData.normalTexture.index !== undefined) {
     const tex = textureMap.get(matData.normalTexture.index);
     if (tex) {
@@ -95,7 +95,7 @@ function defaultMaterialBuilder(
     }
   }
 
-  // 遮蔽贴图
+  // Occlusion map
   if (
     matData.occlusionTexture &&
     matData.occlusionTexture.index !== undefined
@@ -106,7 +106,7 @@ function defaultMaterialBuilder(
     }
   }
 
-  // 自发光
+  // Emissive
   if (matData.emissiveTexture && matData.emissiveTexture.index !== undefined) {
     const tex = textureMap.get(matData.emissiveTexture.index);
     if (tex) {
@@ -121,10 +121,10 @@ function defaultMaterialBuilder(
     );
   }
 
-  // 双面渲染
+  // Double sided rendering
   material.side = matData.doubleSided ? DoubleSide : FrontSide;
 
-  // Alpha模式
+  // Alpha mode
   if (matData.alphaMode === "BLEND") {
     material.transparent = true;
   } else if (matData.alphaMode === "MASK") {

@@ -1,5 +1,4 @@
 import { Material, Texture } from "three";
-import { GLTFParserPlugin } from "./GLTFParserPlugin";
 
 // EXT_mesh_features extension data
 interface MeshFeaturesExtension {

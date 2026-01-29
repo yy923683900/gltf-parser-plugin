@@ -9,7 +9,7 @@ export interface PrimitiveData {
 }
 
 /**
- * 从 GLTF 数据构建 Mesh Primitives
+ * Build Mesh Primitives from GLTF data
  */
 export function buildMeshPrimitives(
   data: GLTFWorkerData,
@@ -35,9 +35,9 @@ export function buildMeshPrimitives(
       const primitive = primitives[primitiveIndex];
       const geometry = new BufferGeometry();
 
-      // 处理顶点属性
+      // Handle vertex attributes
       if (primitive.attributes) {
-        // 位置
+        // Position
         const posData = primitive.attributes.POSITION;
         if (posData && posData.array) {
           geometry.setAttribute(
@@ -46,7 +46,7 @@ export function buildMeshPrimitives(
           );
         }
 
-        // 法线
+        // Normal
         const normalData = primitive.attributes.NORMAL;
         if (normalData && normalData.array) {
           geometry.setAttribute(
@@ -55,7 +55,7 @@ export function buildMeshPrimitives(
           );
         }
 
-        // UV坐标
+        // UV coordinates
         const uvData = primitive.attributes.TEXCOORD_0;
         if (uvData && uvData.array) {
           geometry.setAttribute(
@@ -64,7 +64,7 @@ export function buildMeshPrimitives(
           );
         }
 
-        // 顶点颜色
+        // Vertex color
         const colorData = primitive.attributes.COLOR_0;
         if (colorData && colorData.array) {
           geometry.setAttribute(
@@ -73,7 +73,7 @@ export function buildMeshPrimitives(
           );
         }
 
-        // 切线
+        // Tangent
         const tangentData = primitive.attributes.TANGENT;
         if (tangentData && tangentData.array) {
           geometry.setAttribute(
@@ -82,7 +82,7 @@ export function buildMeshPrimitives(
           );
         }
 
-        // Feature ID 属性 (用于 EXT_mesh_features)
+        // Feature ID attribute (for EXT_mesh_features)
         for (const attrName in primitive.attributes) {
           if (attrName.startsWith("_FEATURE_ID_")) {
             const featureIdData = primitive.attributes[attrName];
@@ -102,13 +102,13 @@ export function buildMeshPrimitives(
         }
       }
 
-      // 索引
+      // Indices
       const indexData = primitive.indices;
       if (indexData && indexData.array) {
         geometry.setIndex(new BufferAttribute(indexData.array, 1));
       }
 
-      // 获取材质
+      // Get material
       const material =
         primitive.material !== undefined
           ? materialMap.get(primitive.material) || defaultMaterial
