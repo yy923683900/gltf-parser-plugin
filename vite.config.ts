@@ -28,13 +28,15 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, "src/index.ts"),
       name: "MaptalksTilerPlugin",
-      formats: ["es", "cjs"],
-      fileName: (format) => `index.${format === "es" ? "js" : "cjs"}`,
+      formats: ["es", "umd"],
+      fileName: (format) => `index.${format === "es" ? "js" : "umd.js"}`,
     },
     rollupOptions: {
       external: ["three"],
       output: {
-        globals: {},
+        globals: {
+          three: "THREE",
+        },
       },
       treeshake: {
         moduleSideEffects: false,
