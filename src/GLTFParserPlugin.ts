@@ -1,4 +1,5 @@
 import { GLTFWorkerLoader } from "./GLTFWorkerLoader";
+import type { MaterialBuilder } from "./types";
 import { setMaxWorkers } from "./utils";
 
 /**
@@ -17,6 +18,12 @@ export interface GLTFParserPluginOptions {
    * @default navigator.hardwareConcurrency
    */
   maxWorkers?: number;
+
+  /**
+   * 自定义材质构建函数
+   * 用于处理 GLTF 材质扩展或自定义材质逻辑
+   */
+  materialBuilder?: MaterialBuilder;
 }
 
 export class GLTFParserPlugin {
@@ -52,6 +59,7 @@ export class GLTFParserPlugin {
     // 创建自定义 loader 并注册，传入 metadata 选项
     this._loader = new GLTFWorkerLoader(tiles.manager, {
       metadata: this._options.metadata,
+      materialBuilder: this._options.materialBuilder,
     });
 
     // 使用正则表达式匹配 .gltf 和 .glb 文件

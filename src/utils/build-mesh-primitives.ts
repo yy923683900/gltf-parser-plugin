@@ -1,9 +1,9 @@
-import { BufferAttribute, BufferGeometry, MeshStandardMaterial } from "three";
+import { BufferAttribute, BufferGeometry, Material } from "three";
 import type { GLTFWorkerData, PrimitiveExtensions } from "../types";
 
 export interface PrimitiveData {
   geometry: BufferGeometry;
-  material: MeshStandardMaterial;
+  material: Material;
   primitiveIndex: number;
   extensions?: PrimitiveExtensions;
 }
@@ -13,8 +13,8 @@ export interface PrimitiveData {
  */
 export function buildMeshPrimitives(
   data: GLTFWorkerData,
-  materialMap: Map<number, MeshStandardMaterial>,
-  defaultMaterial: MeshStandardMaterial,
+  materialMap: Map<number, Material>,
+  defaultMaterial: Material,
 ): Map<number, PrimitiveData[]> {
   const meshMap = new Map<number, PrimitiveData[]>();
 
@@ -92,7 +92,10 @@ export function buildMeshPrimitives(
                 .replace("_feature_id_", "_feature_id_");
               geometry.setAttribute(
                 normalizedName,
-                new BufferAttribute(featureIdData.array, featureIdData.itemSize || 1),
+                new BufferAttribute(
+                  featureIdData.array,
+                  featureIdData.itemSize || 1,
+                ),
               );
             }
           }

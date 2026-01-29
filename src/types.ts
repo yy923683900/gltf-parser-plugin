@@ -1,3 +1,5 @@
+import { Material, Texture } from "three";
+
 // EXT_mesh_features extension data
 interface MeshFeaturesExtension {
   featureIds: Array<{
@@ -205,3 +207,8 @@ export interface GLTFNodeData {
   scale?: number[];
   children?: GLTFNodeData[];
 }
+
+export type MaterialBuilder = (
+  matData: unknown,
+  textureMap: Map<number, Texture>,
+) => Material;

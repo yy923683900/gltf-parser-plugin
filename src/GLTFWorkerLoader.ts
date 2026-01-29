@@ -16,7 +16,7 @@ import {
   type PrimitiveData,
   getWorkers,
 } from "./utils";
-import type { GLTFNodeData, GLTFWorkerData } from "./types";
+import type { GLTFNodeData, GLTFWorkerData, MaterialBuilder } from "./types";
 import { StructuralMetadata } from "3d-tiles-renderer/src/three/plugins/gltf/metadata/classes/StructuralMetadata.js";
 import { MeshFeatures } from "3d-tiles-renderer/src/three/plugins/gltf/metadata/classes/MeshFeatures.js";
 
@@ -30,6 +30,8 @@ const EXT_MESH_FEATURES = "EXT_mesh_features";
 export interface GLTFWorkerLoaderOptions {
   /** 是否启用 metadata 支持 (EXT_mesh_features, EXT_structural_metadata) */
   metadata?: boolean;
+  /** 自定义材质构建函数 */
+  materialBuilder?: MaterialBuilder;
 }
 
 let uuid = 0;
@@ -39,6 +41,7 @@ let uuid = 0;
  */
 export class GLTFWorkerLoader extends Loader {
   private _metadata: boolean = true;
+  private _materialBuilder?: MaterialBuilder;
   private _loaderId = uuid++;
   private _callbacks = new Map<
     number,
@@ -49,6 +52,7 @@ export class GLTFWorkerLoader extends Loader {
   constructor(manager?: LoadingManager, options?: GLTFWorkerLoaderOptions) {
     super(manager);
     this._metadata = options?.metadata ?? true;
+    this._materialBuilder = options?.materialBuilder;
 
     this.addListeners();
   }
@@ -113,7 +117,7 @@ export class GLTFWorkerLoader extends Loader {
           method: "parseTile",
           buffer: buffer,
           root: workingPath,
-          loaderId: this._loaderId, // Use requestId as loaderId for the worker
+          loaderId: this._loaderId,
           requestId,
         },
         [buffer],
@@ -148,7 +152,7 @@ export class GLTFWorkerLoader extends Loader {
     const { textureMap, textureArray } = buildTextures(data);
 
     // 构建材质
-    const materialMap = buildMaterials(data, textureMap);
+    const materialMap = buildMaterials(data, textureMap, this._materialBuilder);
 
     // 创建默认材质
     const defaultMaterial = new MeshStandardMaterial({ color: 0xcccccc });
@@ -278,7 +282,9 @@ export class GLTFWorkerLoader extends Loader {
       if (!(child instanceof Mesh)) return;
 
       const meshIndex = child.userData._gltfMeshIndex as number | undefined;
-      const primitiveIndex = child.userData._gltfPrimitiveIndex as number | undefined;
+      const primitiveIndex = child.userData._gltfPrimitiveIndex as
+        | number
+        | undefined;
       if (meshIndex === undefined || primitiveIndex === undefined) return;
 
       const primitiveDataList = meshMap.get(meshIndex);
