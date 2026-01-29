@@ -25,19 +25,19 @@ const EXT_STRUCTURAL_METADATA = "EXT_structural_metadata";
 const EXT_MESH_FEATURES = "EXT_mesh_features";
 
 /**
- * GLTFWorkerLoader 配置选项
+ * GLTFWorkerLoader configuration options
  */
 export interface GLTFWorkerLoaderOptions {
-  /** 是否启用 metadata 支持 (EXT_mesh_features, EXT_structural_metadata) */
+  /** Whether to enable metadata support (EXT_mesh_features, EXT_structural_metadata) */
   metadata?: boolean;
-  /** 自定义材质构建函数 */
+  /** Custom material builder function */
   materialBuilder?: MaterialBuilder;
 }
 
 let uuid = 0;
 
 /**
- * 使用 Worker 解析 GLTF 的自定义 Loader
+ * Custom Loader using Worker for GLTF parsing
  */
 export class GLTFWorkerLoader extends Loader {
   private _metadata: boolean = true;
@@ -72,19 +72,19 @@ export class GLTFWorkerLoader extends Loader {
   }
 
   /**
-   * 异步解析 GLTF buffer
+   * Asynchronously parse GLTF buffer
    */
   async parseAsync(buffer: ArrayBuffer, path: string): Promise<any> {
-    // 获取可用 Worker（如果都忙则等待）
+    // Acquire available Worker
     const worker = acquireWorker();
 
-    // 使用 worker 解析
+    // Parse using worker
     const data = await this.parseWithWorker(worker, buffer, path);
 
-    // 构建 Three.js 场景
+    // Build Three.js scene
     const scene = this.buildSceneFromGLTFData(data);
 
-    // 返回与GLTFLoader相同的格式
+    // Return format identical to GLTFLoader
     return {
       scene: scene,
       scenes: [scene],
@@ -100,7 +100,7 @@ export class GLTFWorkerLoader extends Loader {
   }
 
   /**
-   * 使用 Worker 解析 GLTF 数据
+   * Parse GLTF data using Worker
    */
   private parseWithWorker(
     worker: Worker,
@@ -111,7 +111,7 @@ export class GLTFWorkerLoader extends Loader {
       const requestId = this._nextRequestId++;
       this._callbacks.set(requestId, { resolve, reject });
 
-      // 发送 buffer 和工作路径给 worker
+      // Send buffer and working path to worker
       worker.postMessage(
         {
           method: "parseTile",
@@ -143,24 +143,24 @@ export class GLTFWorkerLoader extends Loader {
   };
 
   /**
-   * 将 Worker 返回的 GLTF 数据转换成 Three.js Scene
+   * Convert GLTF data returned by Worker to Three.js Scene
    */
   private buildSceneFromGLTFData(data: GLTFWorkerData): Scene {
     const scene = new Scene();
 
-    // 构建纹理
+    // Build textures
     const { textureMap, textureArray } = buildTextures(data);
 
-    // 构建材质
+    // Build materials
     const materialMap = buildMaterials(data, textureMap, this._materialBuilder);
 
-    // 创建默认材质
+    // Create default material
     const defaultMaterial = new MeshStandardMaterial({ color: 0xcccccc });
 
-    // 构建 mesh primitives
+    // Build mesh primitives
     const meshMap = buildMeshPrimitives(data, materialMap, defaultMaterial);
 
-    // 解析节点
+    // Parse node
     const parseNodeData = (nodeData: GLTFNodeData): Group => {
       const node = new Group();
 
@@ -172,19 +172,19 @@ export class GLTFWorkerLoader extends Loader {
           primitiveIndex,
         } of primitiveDataList) {
           const mesh = new Mesh(geometry, material);
-          // 记录 mesh 对应的原始 GLTF 索引
+          // Record original GLTF index corresponding to the mesh
           mesh.userData._gltfMeshIndex = nodeData.mesh;
           mesh.userData._gltfPrimitiveIndex = primitiveIndex;
           node.add(mesh);
         }
       }
 
-      // 设置节点名称
+      // Set node name
       if (nodeData.name) {
         node.name = nodeData.name;
       }
 
-      // 应用变换
+      // Apply transformation
       if (nodeData.matrix) {
         const m = new Matrix4();
         m.fromArray(nodeData.matrix);
@@ -214,7 +214,7 @@ export class GLTFWorkerLoader extends Loader {
         }
       }
 
-      // 递归处理子节点
+      // Recursively process child nodes
       if (nodeData.children && Array.isArray(nodeData.children)) {
         for (const child of nodeData.children) {
           const childNode = parseNodeData(child);
@@ -225,14 +225,14 @@ export class GLTFWorkerLoader extends Loader {
       return node;
     };
 
-    // 添加场景节点
+    // Add scene nodes
     const sceneData = data.scenes[0];
     for (const nodeData of sceneData.nodes) {
       const node = parseNodeData(nodeData);
       scene.add(node);
     }
 
-    // 处理 metadata (如果启用)
+    // Process metadata (if enabled)
     if (this._metadata) {
       this.processMetadata(scene, data, textureArray, meshMap);
     }
@@ -241,7 +241,7 @@ export class GLTFWorkerLoader extends Loader {
   }
 
   /**
-   * 处理并挂载 metadata 到场景和 mesh 对象
+   * Process and attach metadata to scene and mesh objects
    */
   private processMetadata(
     scene: Scene,
@@ -259,7 +259,7 @@ export class GLTFWorkerLoader extends Loader {
       return;
     }
 
-    // 处理 EXT_structural_metadata
+    // Process EXT_structural_metadata
     let rootMetadata: any = null;
     if (hasStructuralMetadata && data.structuralMetadata) {
       const rootExtension = data.json?.extensions?.[EXT_STRUCTURAL_METADATA];
@@ -277,7 +277,7 @@ export class GLTFWorkerLoader extends Loader {
       }
     }
 
-    // 遍历场景中的所有 mesh，处理 mesh-level metadata
+    // Traverse all meshes in the scene, process mesh-level metadata
     scene.traverse((child) => {
       if (!(child instanceof Mesh)) return;
 
@@ -297,7 +297,7 @@ export class GLTFWorkerLoader extends Loader {
 
       const extensions = primitiveData.extensions;
 
-      // 处理 EXT_structural_metadata (primitive level)
+      // Process EXT_structural_metadata (primitive level)
       if (hasStructuralMetadata && rootMetadata) {
         const primMetadataExt = extensions?.[EXT_STRUCTURAL_METADATA];
         if (primMetadataExt) {
@@ -325,7 +325,7 @@ export class GLTFWorkerLoader extends Loader {
         }
       }
 
-      // 处理 EXT_mesh_features
+      // Process EXT_mesh_features
       if (hasMeshFeatures) {
         const meshFeaturesExt = extensions?.[EXT_MESH_FEATURES];
         if (meshFeaturesExt) {

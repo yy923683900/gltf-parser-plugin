@@ -3,31 +3,31 @@ import type { MaterialBuilder } from "./types";
 import { setMaxWorkers } from "./utils";
 
 /**
- * GLTFParserPlugin 配置选项
+ * GLTFParserPlugin configuration options
  */
 export interface GLTFParserPluginOptions {
   /**
-   * 是否启用 metadata 支持
-   * 包括 EXT_mesh_features 和 EXT_structural_metadata 扩展
+   * Whether to enable metadata support
+   * Includes EXT_mesh_features and EXT_structural_metadata extensions
    * @default true
    */
   metadata?: boolean;
   /**
-   * Worker 池中最大 Worker 数量
-   * 最大值为 navigator.hardwareConcurrency
+   * Maximum number of workers in the worker pool
+   * Maximum value is navigator.hardwareConcurrency
    * @default navigator.hardwareConcurrency
    */
   maxWorkers?: number;
 
   /**
-   * 自定义材质构建函数
-   * 用于处理 GLTF 材质扩展或自定义材质逻辑
+   * Custom material builder function
+   * Used to handle GLTF material extensions or custom material logic
    */
   materialBuilder?: MaterialBuilder;
 
   /**
-   * 解析前回调函数
-   * 用于在解析 GLTF 前对缓冲区进行预处理
+   * Callback function before parsing
+   * Used to preprocess the buffer before parsing GLTF
    */
   beforeParseTile?: (
     buffer: ArrayBuffer,
@@ -47,8 +47,8 @@ export class GLTFParserPlugin {
   private readonly _options: GLTFParserPluginOptions;
 
   /**
-   * 创建 GLTFParserPlugin 实例
-   * @param options 配置选项
+   * Create a GLTFParserPlugin instance
+   * @param options configuration options
    */
   constructor(options?: GLTFParserPluginOptions) {
     console.log("GLTFParserPlugin constructor");
@@ -58,23 +58,23 @@ export class GLTFParserPlugin {
       ...options,
     };
 
-    // 设置 Worker 池大小并初始化
+    // Set worker pool size and initialize
     setMaxWorkers(this._options.maxWorkers!);
   }
 
   /**
-   * 插件初始化，由 TilesRenderer 调用
+   * Plugin initialization, called by TilesRenderer
    */
   init(tiles: any) {
     this.tiles = tiles;
 
-    // 创建自定义 loader 并注册，传入 metadata 选项
+    // Create custom loader and register, passing metadata options
     this._loader = new GLTFWorkerLoader(tiles.manager, {
       metadata: this._options.metadata,
       materialBuilder: this._options.materialBuilder,
     });
 
-    // 使用正则表达式匹配 .gltf 和 .glb 文件
+    // Use regex to match .gltf and .glb files
     tiles.manager.addHandler(this._gltfRegex, this._loader);
   }
 
@@ -85,7 +85,7 @@ export class GLTFParserPlugin {
     uri: string,
     abortSignal: AbortSignal,
   ) {
-    // 调用解析前回调函数
+    // Call beforeParseTile callback
     if (this._options.beforeParseTile) {
       buffer = await this._options.beforeParseTile(
         buffer,
@@ -99,15 +99,15 @@ export class GLTFParserPlugin {
   }
 
   /**
-   * 插件销毁
+   * Plugin disposal
    */
   dispose() {
-    // 移除 handler
+    // Remove handler
     if (this.tiles) {
       this.tiles.manager.removeHandler(this._gltfRegex);
     }
 
-    // 移除 Worker 监听器
+    // Remove Worker listeners
     if (this._loader) {
       this._loader.removeListeners();
     }
