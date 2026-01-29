@@ -1,6 +1,11 @@
 import { defineConfig } from "vitest/config";
 import dts from "vite-plugin-dts";
 import { resolve } from "path";
+import { readFileSync } from "fs";
+
+const pkg = JSON.parse(
+  readFileSync(resolve(__dirname, "package.json"), "utf-8"),
+);
 
 export default defineConfig({
   plugins: [
@@ -29,7 +34,8 @@ export default defineConfig({
       entry: resolve(__dirname, "src/index.ts"),
       name: "MaptalksTilerPlugin",
       formats: ["es", "umd"],
-      fileName: (format) => `index.${format === "es" ? "js" : "umd.js"}`,
+      fileName: (format) =>
+        `${pkg.name}.${format === "es" ? "module.js" : "umd.js"}`,
     },
     rollupOptions: {
       external: ["three"],
