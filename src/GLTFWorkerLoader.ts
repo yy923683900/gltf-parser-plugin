@@ -47,7 +47,7 @@ let uuid = 0;
  */
 export class GLTFWorkerLoader extends Loader {
   private _metadata: boolean = true;
-  loaderId = uuid++;
+  private _loaderId = uuid++;
   private _callbacks = new Map<
     number,
     { resolve: (data: any) => void; reject: (err: Error) => void }
@@ -121,7 +121,8 @@ export class GLTFWorkerLoader extends Loader {
           method: "parseTile",
           buffer: buffer,
           root: workingPath,
-          loaderId: requestId, // Use requestId as loaderId for the worker
+          loaderId: this._loaderId, // Use requestId as loaderId for the worker
+          requestId,
         },
         [buffer],
       );
@@ -129,13 +130,14 @@ export class GLTFWorkerLoader extends Loader {
   }
 
   private _onMessage = (event: MessageEvent) => {
-    const { type, data, error, loaderId } = event.data;
+    const { type, data, error, loaderId, requestId } = event.data;
 
     // loaderId here is our requestId
-    const callback = this._callbacks.get(loaderId);
+    if (loaderId !== this._loaderId) return;
+    const callback = this._callbacks.get(requestId);
     if (!callback) return;
 
-    this._callbacks.delete(loaderId);
+    this._callbacks.delete(requestId);
 
     if (type === "success") {
       callback.resolve(data);

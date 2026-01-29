@@ -18,7 +18,8 @@ function load(root: string, data: any, options: any) {
  * Worker message handler
  */
 self.onmessage = function (event: MessageEvent) {
-  const { method, fetchOptions, loaderId, buffer, root } = event.data;
+  const { method, fetchOptions, loaderId, requestId, buffer, root } =
+    event.data;
 
   if (method === "parseTile") {
     load(
@@ -37,6 +38,7 @@ self.onmessage = function (event: MessageEvent) {
           self.postMessage({
             type: "error",
             loaderId,
+            requestId,
             error: data.message,
           });
           return;
@@ -49,6 +51,7 @@ self.onmessage = function (event: MessageEvent) {
             {
               type: "success",
               loaderId,
+              requestId,
               data: processedData,
             },
             transferables,
@@ -57,6 +60,7 @@ self.onmessage = function (event: MessageEvent) {
           self.postMessage({
             type: "error",
             loaderId,
+            requestId,
             error: err.message || String(err),
           });
         }
@@ -65,6 +69,7 @@ self.onmessage = function (event: MessageEvent) {
         self.postMessage({
           type: "error",
           loaderId,
+          requestId,
           error: error.message || String(error),
         });
       });
