@@ -26,5 +26,5 @@
     "rootDir": "./src"
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "web-ifc-example-1.0"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }
