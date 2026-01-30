@@ -9,6 +9,7 @@ pnpm-debug.log*
 debug/
 
 # Build outputs
+build/
 dist/
 
 # Editor directories and files

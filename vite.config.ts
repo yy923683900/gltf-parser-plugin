@@ -18,7 +18,7 @@ export default defineConfig({
     port: 3000,
     open: true,
     watch: {
-      ignored: ["**/node_modules/**", "**/dist/**"],
+      ignored: ["**/node_modules/**", "**/build/**"],
     },
   },
   worker: {
@@ -30,12 +30,12 @@ export default defineConfig({
     },
   },
   build: {
+    outDir: "build",
     lib: {
       entry: resolve(__dirname, "src/index.ts"),
       name: "MaptalksTilerPlugin",
-      formats: ["es", "umd"],
-      fileName: (format) =>
-        `${pkg.name}.${format === "es" ? "module.js" : "umd.js"}`,
+      formats: ["es"],
+      fileName: () => `${pkg.name}.module.js`,
     },
     rollupOptions: {
       external: ["three"],
