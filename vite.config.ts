@@ -50,19 +50,7 @@ export default defineConfig({
       },
     },
     sourcemap: true,
-    // minify: true,
-    minify: "terser",
-    terserOptions: {
-      compress: {
-        passes: 2,
-      },
-      mangle: {
-        properties: false,
-      },
-      format: {
-        comments: false,
-      },
-    },
+    minify: false,
   },
   test: {
     environment: "node",

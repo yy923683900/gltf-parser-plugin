@@ -1,7 +1,4 @@
-import type { AttributeData } from "./types";
-import { dequantizeAttribute } from "./dequantize";
 import { computeVertexNormals } from "./normals";
-import { decodeTangent } from "./tangent";
 
 /**
  * Process and dequantize GLTF data
@@ -19,73 +16,26 @@ export function processGLTFData(data: any): {
     }
   };
 
-  // Helper to process and replace attribute
-  const processAndReplace = (
-    key: string,
-    itemSize: number,
-    attributes: Record<string, AttributeData>,
-    decoder?: (attr: AttributeData) => any,
-  ) => {
-    const attr = attributes[key];
-    if (attr && attr.array) {
-      let processed;
-      if (decoder) {
-        processed = decoder(attr);
-      } else if (attr.quantization) {
-        processed = dequantizeAttribute(attr, itemSize);
-      } else {
-        processed = attr.array;
-      }
-      attributes[key] = { array: processed, itemSize };
-      addTransferable(processed);
-      return processed;
-    }
-    return null;
-  };
-
   if (data.meshes) {
     for (const meshData of Object.values(data.meshes) as any[]) {
       for (const primitive of meshData.primitives) {
         const { attributes, indices } = primitive;
         if (!attributes) continue;
-        // Process position
-        processAndReplace("POSITION", 3, attributes);
 
-        // Process normals
+        // Compute vertex normals
         if (attributes.POSITION) {
-          // compute vertex normals
           const posArray = attributes.POSITION.array;
-          const indexArray = indices ? indices.array : null;
+          const indexArray = indices?.array ?? null;
           const computedNormals = computeVertexNormals(posArray, indexArray);
           attributes.NORMAL = { array: computedNormals, itemSize: 3 };
           addTransferable(computedNormals);
         }
 
-        // Process UV
-        processAndReplace("TEXCOORD_0", 2, attributes);
-
-        // Process vertex colors
-        const colorData = attributes.COLOR_0;
-        if (colorData && colorData.array) {
-          const itemSize = colorData.type === "VEC4" ? 4 : 3;
-          processAndReplace("COLOR_0", itemSize, attributes);
-        }
-
-        // Process tangents
-        processAndReplace("TANGENT", 4, attributes, decodeTangent);
-
-        // Process Feature ID attributes (for EXT_mesh_features)
-        for (const attrName in attributes) {
-          if (attrName.startsWith("_FEATURE_ID_")) {
-            processAndReplace(attrName, 1, attributes);
-          }
-        }
-
-        // Process indices - ensure TypedArray
-        if (indices && indices.array) {
-          // Indices do not need conversion, keep original type
-          primitive.indices = { array: indices.array };
-          addTransferable(indices.array);
+        // Process vertex colors (itemSize needed: VEC4 = 4, VEC3 = 3)
+        if (attributes.COLOR_0?.array) {
+          attributes.COLOR_0.itemSize =
+            attributes.COLOR_0.type === "VEC4" ? 4 : 3;
+          addTransferable(attributes.COLOR_0.array);
         }
       }
     }

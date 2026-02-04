@@ -10,7 +10,7 @@ import { processGLTFData } from "./process";
 function load(root: string, data: any, options: any) {
   const loader = new GLTFLoader(root, data, options);
   return loader.load({
-    skipAttributeTransform: true,
+    skipAttributeTransform: false,
   });
 }
 
