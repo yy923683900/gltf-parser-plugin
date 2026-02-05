@@ -119,6 +119,10 @@ export class GLTFWorkerLoader extends Loader {
           root: workingPath,
           loaderId: this._loaderId,
           requestId,
+          fetchOptions: {
+            referrer: window.location.href,
+            referrerPolicy: "origin",
+          },
         },
         [buffer],
       );
