@@ -12,18 +12,18 @@ importers:
         specifier: ^0.4.21
         version: 0.4.21(three@0.182.0)
       '@maptalks/gltf-loader':
-        specifier: ^0.123.0
-        version: 0.123.0
+        specifier: ^0.124.1
+        version: 0.124.1
       '@maptalks/transcoders.draco':
-        specifier: ^0.123.0
-        version: 0.123.0
+        specifier: ^0.124.1
+        version: 0.124.1
       three:
         specifier: ^0.182.0
         version: 0.182.0
     devDependencies:
       '@types/node':
-        specifier: ^25.2.0
-        version: 25.2.0
+        specifier: ^25.2.1
+        version: 25.2.1
       '@types/three':
         specifier: ^0.182.0
         version: 0.182.0
@@ -41,13 +41,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: ^7.3.1
-        version: 7.3.1(@types/node@25.2.0)(terser@5.46.0)
+        version: 7.3.1(@types/node@25.2.1)(terser@5.46.0)
       vite-plugin-dts:
         specifier: ^4.5.4
-        version: 4.5.4(@types/node@25.2.0)(rollup@4.52.5)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.0)(terser@5.46.0))
+        version: 4.5.4(@types/node@25.2.1)(rollup@4.52.5)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.1)(terser@5.46.0))
       vitest:
         specifier: ^4.0.18
-        version: 4.0.18(@types/node@25.2.0)(terser@5.46.0)
+        version: 4.0.18(@types/node@25.2.1)(terser@5.46.0)
 
 packages:
 
@@ -341,11 +341,11 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@maptalks/gltf-loader@0.123.0':
-    resolution: {integrity: sha512-OdILR7KXMHy2Yu9ScQ+P7U7VR8/MD/XjrCwxxHq+MemvWz0Jcd2yJFU2t3PL4NdCKMMEBAW2nEXRj5cJxyHWOQ==}
+  '@maptalks/gltf-loader@0.124.1':
+    resolution: {integrity: sha512-t5sRTE8A9EV0WqyTInYqYAtoXE6vKUduZLtGtlXeohj8610crixn9qc0me6E6bLjv1lIuPOY9cPdIvBdDqwWXw==}
 
-  '@maptalks/transcoders.draco@0.123.0':
-    resolution: {integrity: sha512-gz/CnHO/sFe2+ppCMiCCJ46Rvad9mzJmR1DfLiCQrLWlR2sDZoW9gjrTeVmvaRerTvTPNFvTMRi8DAXF8buEwg==}
+  '@maptalks/transcoders.draco@0.124.1':
+    resolution: {integrity: sha512-QFUFWSAFdUkexpohFkz/XsxagUv5WhPFhLFxWHH0l9LWzxciiNd16/fTkczVtlv945+ay+MGkU3ogIfiFUK3vw==}
 
   '@microsoft/api-extractor-model@7.31.1':
     resolution: {integrity: sha512-Dhnip5OFKbl85rq/ICHBFGhV4RA5UQSl8AC/P/zoGvs+CBudPkatt5kIhMGiYgVPnUWmfR6fcp38+1AFLYNtUw==}
@@ -541,8 +541,8 @@ packages:
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
-  '@types/node@25.2.0':
-    resolution: {integrity: sha512-DZ8VwRFUNzuqJ5khrvwMXHmvPe+zGayJhr2CDNiKB1WBE1ST8Djl00D0IC4vvNmHMdj6DlbYRIaFE7WHjlDl5w==}
+  '@types/node@25.2.1':
+    resolution: {integrity: sha512-CPrnr8voK8vC6eEtyRzvMpgp3VyVRhgclonE7qYi6P9sXwYb59ucfrnmFBTaP0yUi8Gk4yZg/LlTJULGxvTNsg==}
 
   '@types/stats.js@0.17.4':
     resolution: {integrity: sha512-jIBvWWShCvlBqBNIZt0KAshWpvSjhkwkEu4ZUcASoAvhmrgAUI2t1dXrjSL4xXVLB4FznPrIsX3nKXFl/Dt4vA==}
@@ -1571,29 +1571,29 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.5.5
     optional: true
 
-  '@maptalks/gltf-loader@0.123.0':
+  '@maptalks/gltf-loader@0.124.1':
     dependencies:
       gl-matrix: 3.4.4
 
-  '@maptalks/transcoders.draco@0.123.0': {}
+  '@maptalks/transcoders.draco@0.124.1': {}
 
-  '@microsoft/api-extractor-model@7.31.1(@types/node@25.2.0)':
+  '@microsoft/api-extractor-model@7.31.1(@types/node@25.2.1)':
     dependencies:
       '@microsoft/tsdoc': 0.15.1
       '@microsoft/tsdoc-config': 0.17.1
-      '@rushstack/node-core-library': 5.17.0(@types/node@25.2.0)
+      '@rushstack/node-core-library': 5.17.0(@types/node@25.2.1)
     transitivePeerDependencies:
       - '@types/node'
 
-  '@microsoft/api-extractor@7.53.1(@types/node@25.2.0)':
+  '@microsoft/api-extractor@7.53.1(@types/node@25.2.1)':
     dependencies:
-      '@microsoft/api-extractor-model': 7.31.1(@types/node@25.2.0)
+      '@microsoft/api-extractor-model': 7.31.1(@types/node@25.2.1)
       '@microsoft/tsdoc': 0.15.1
       '@microsoft/tsdoc-config': 0.17.1
-      '@rushstack/node-core-library': 5.17.0(@types/node@25.2.0)
+      '@rushstack/node-core-library': 5.17.0(@types/node@25.2.1)
       '@rushstack/rig-package': 0.6.0
-      '@rushstack/terminal': 0.19.1(@types/node@25.2.0)
-      '@rushstack/ts-command-line': 5.1.1(@types/node@25.2.0)
+      '@rushstack/terminal': 0.19.1(@types/node@25.2.1)
+      '@rushstack/ts-command-line': 5.1.1(@types/node@25.2.1)
       lodash: 4.17.21
       minimatch: 10.0.3
       resolve: 1.22.10
@@ -1686,7 +1686,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.52.5':
     optional: true
 
-  '@rushstack/node-core-library@5.17.0(@types/node@25.2.0)':
+  '@rushstack/node-core-library@5.17.0(@types/node@25.2.1)':
     dependencies:
       ajv: 8.13.0
       ajv-draft-04: 1.0.0(ajv@8.13.0)
@@ -1697,28 +1697,28 @@ snapshots:
       resolve: 1.22.10
       semver: 7.5.4
     optionalDependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.2.1
 
-  '@rushstack/problem-matcher@0.1.1(@types/node@25.2.0)':
+  '@rushstack/problem-matcher@0.1.1(@types/node@25.2.1)':
     optionalDependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.2.1
 
   '@rushstack/rig-package@0.6.0':
     dependencies:
       resolve: 1.22.10
       strip-json-comments: 3.1.1
 
-  '@rushstack/terminal@0.19.1(@types/node@25.2.0)':
+  '@rushstack/terminal@0.19.1(@types/node@25.2.1)':
     dependencies:
-      '@rushstack/node-core-library': 5.17.0(@types/node@25.2.0)
-      '@rushstack/problem-matcher': 0.1.1(@types/node@25.2.0)
+      '@rushstack/node-core-library': 5.17.0(@types/node@25.2.1)
+      '@rushstack/problem-matcher': 0.1.1(@types/node@25.2.1)
       supports-color: 8.1.1
     optionalDependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.2.1
 
-  '@rushstack/ts-command-line@5.1.1(@types/node@25.2.0)':
+  '@rushstack/ts-command-line@5.1.1(@types/node@25.2.1)':
     dependencies:
-      '@rushstack/terminal': 0.19.1(@types/node@25.2.0)
+      '@rushstack/terminal': 0.19.1(@types/node@25.2.1)
       '@types/argparse': 1.0.38
       argparse: 1.0.10
       string-argv: 0.3.2
@@ -1742,7 +1742,7 @@ snapshots:
 
   '@types/json-schema@7.0.15': {}
 
-  '@types/node@25.2.0':
+  '@types/node@25.2.1':
     dependencies:
       undici-types: 7.16.0
 
@@ -1860,13 +1860,13 @@ snapshots:
       chai: 6.2.1
       tinyrainbow: 3.0.3
 
-  '@vitest/mocker@4.0.18(vite@7.3.1(@types/node@25.2.0)(terser@5.46.0))':
+  '@vitest/mocker@4.0.18(vite@7.3.1(@types/node@25.2.1)(terser@5.46.0))':
     dependencies:
       '@vitest/spy': 4.0.18
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 7.3.1(@types/node@25.2.0)(terser@5.46.0)
+      vite: 7.3.1(@types/node@25.2.1)(terser@5.46.0)
 
   '@vitest/pretty-format@4.0.18':
     dependencies:
@@ -2511,9 +2511,9 @@ snapshots:
     dependencies:
       punycode: 2.3.1
 
-  vite-plugin-dts@4.5.4(@types/node@25.2.0)(rollup@4.52.5)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.0)(terser@5.46.0)):
+  vite-plugin-dts@4.5.4(@types/node@25.2.1)(rollup@4.52.5)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.1)(terser@5.46.0)):
     dependencies:
-      '@microsoft/api-extractor': 7.53.1(@types/node@25.2.0)
+      '@microsoft/api-extractor': 7.53.1(@types/node@25.2.1)
       '@rollup/pluginutils': 5.1.4(rollup@4.52.5)
       '@volar/typescript': 2.4.23
       '@vue/language-core': 2.2.0(typescript@5.9.3)
@@ -2524,13 +2524,13 @@ snapshots:
       magic-string: 0.30.17
       typescript: 5.9.3
     optionalDependencies:
-      vite: 7.3.1(@types/node@25.2.0)(terser@5.46.0)
+      vite: 7.3.1(@types/node@25.2.1)(terser@5.46.0)
     transitivePeerDependencies:
       - '@types/node'
       - rollup
       - supports-color
 
-  vite@7.3.1(@types/node@25.2.0)(terser@5.46.0):
+  vite@7.3.1(@types/node@25.2.1)(terser@5.46.0):
     dependencies:
       esbuild: 0.27.2
       fdir: 6.5.0(picomatch@4.0.3)
@@ -2539,14 +2539,14 @@ snapshots:
       rollup: 4.52.5
       tinyglobby: 0.2.15
     optionalDependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.2.1
       fsevents: 2.3.3
       terser: 5.46.0
 
-  vitest@4.0.18(@types/node@25.2.0)(terser@5.46.0):
+  vitest@4.0.18(@types/node@25.2.1)(terser@5.46.0):
     dependencies:
       '@vitest/expect': 4.0.18
-      '@vitest/mocker': 4.0.18(vite@7.3.1(@types/node@25.2.0)(terser@5.46.0))
+      '@vitest/mocker': 4.0.18(vite@7.3.1(@types/node@25.2.1)(terser@5.46.0))
       '@vitest/pretty-format': 4.0.18
       '@vitest/runner': 4.0.18
       '@vitest/snapshot': 4.0.18
@@ -2563,10 +2563,10 @@ snapshots:
       tinyexec: 1.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vite: 7.3.1(@types/node@25.2.0)(terser@5.46.0)
+      vite: 7.3.1(@types/node@25.2.1)(terser@5.46.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.2.1
     transitivePeerDependencies:
       - jiti
       - less

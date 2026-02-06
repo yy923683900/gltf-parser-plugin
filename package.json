@@ -28,7 +28,7 @@
   "author": "maptalks",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^25.2.0",
+    "@types/node": "^25.2.1",
     "@types/three": "^0.182.0",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
@@ -40,8 +40,8 @@
   },
   "dependencies": {
     "3d-tiles-renderer": "^0.4.21",
-    "@maptalks/gltf-loader": "^0.123.0",
-    "@maptalks/transcoders.draco": "^0.123.0",
+    "@maptalks/gltf-loader": "^0.124.1",
+    "@maptalks/transcoders.draco": "^0.124.1",
     "three": "^0.182.0"
   }
 }
