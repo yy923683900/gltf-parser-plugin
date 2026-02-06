@@ -1,4 +1,3 @@
-import { computeVertexNormals } from "./normals";
 
 /**
  * Process and dequantize GLTF data
@@ -16,26 +15,52 @@ export function processGLTFData(data: any): {
     }
   };
 
+  // Helper to process attribute: ensure structure and mark as transferable
+  const processAttribute = (
+    key: string,
+    itemSize: number,
+    attributes: Record<string, any>,
+  ) => {
+    const attr = attributes[key];
+    if (!attr?.array) return null;
+
+    // Update attribute structure and add to transferables
+    attributes[key] = { array: attr.array, itemSize };
+    addTransferable(attr.array);
+
+    return attr.array;
+  };
+
   if (data.meshes) {
     for (const meshData of Object.values(data.meshes) as any[]) {
       for (const primitive of meshData.primitives) {
-        const { attributes, indices } = primitive;
+        const { attributes } = primitive;
         if (!attributes) continue;
 
-        // Compute vertex normals
-        if (attributes.POSITION) {
-          const posArray = attributes.POSITION.array;
-          const indexArray = indices?.array ?? null;
-          const computedNormals = computeVertexNormals(posArray, indexArray);
-          attributes.NORMAL = { array: computedNormals, itemSize: 3 };
-          addTransferable(computedNormals);
+        // Process position
+        processAttribute("POSITION", 3, attributes);
+
+        // Process normals
+        processAttribute("NORMAL", 3, attributes);
+
+        // Process UV
+        processAttribute("TEXCOORD_0", 2, attributes);
+
+        // Process vertex colors
+        const colorData = attributes.COLOR_0;
+        if (colorData && colorData.array) {
+          const itemSize = colorData.type === "VEC4" ? 4 : 3;
+          processAttribute("COLOR_0", itemSize, attributes);
         }
 
-        // Process vertex colors (itemSize needed: VEC4 = 4, VEC3 = 3)
-        if (attributes.COLOR_0?.array) {
-          attributes.COLOR_0.itemSize =
-            attributes.COLOR_0.type === "VEC4" ? 4 : 3;
-          addTransferable(attributes.COLOR_0.array);
+        // Process tangents
+        processAttribute("TANGENT", 4, attributes);
+
+        // Process Feature ID attributes (for EXT_mesh_features)
+        for (const attrName in attributes) {
+          if (attrName.startsWith("_FEATURE_ID_")) {
+            processAttribute(attrName, 1, attributes);
+          }
         }
       }
     }
